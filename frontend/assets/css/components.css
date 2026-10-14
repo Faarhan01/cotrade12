@@ -1,0 +1,220 @@
+/* frontend — components
+   ---------------------------------------------------------------------------
+   Reusable pieces: stat cards, tables, tags, buttons, forms, empty states and
+   the price-change flash.
+
+   These are shared by every page. Anything used by exactly one page belongs in
+   assets/css/pages/ instead.
+*/
+
+/* ── Stat cards ──────────────────────────────────────────────────────── */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+  gap: var(--gap);
+  margin-bottom: 18px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 15px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.card.big .card-value { font-size: var(--fs-stat); }
+
+.card-label {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.card-value {
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  margin-top: 4px;
+  letter-spacing: -.015em;
+}
+
+.card-hint { color: var(--muted); font-size: var(--fs-sm); margin-top: 3px; }
+
+/* ── Tables ──────────────────────────────────────────────────────────── */
+
+table.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-md);
+}
+
+table.grid th {
+  text-align: left;
+  font-weight: 550;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: .045em;
+  color: var(--muted);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  white-space: nowrap;
+}
+
+table.grid th small {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: .7;
+}
+
+table.grid td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
+}
+
+table.grid tbody tr:last-child td { border-bottom: none; }
+table.grid tbody tr:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+
+td.num, th.num { text-align: right; }
+td.sym { font-weight: 550; }
+td.sym a { color: var(--text); text-decoration: none; border-bottom: 1px dotted var(--border); }
+td.sym a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+
+.empty { padding: 30px 16px; text-align: center; color: var(--muted); font-size: var(--fs-md); }
+.empty span { display: block; font-size: var(--fs-sm); opacity: .7; margin-top: 3px; }
+
+/* ── Tags ────────────────────────────────────────────────────────────── */
+
+.tag {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 100px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tag.buy  { color: var(--pos); border-color: color-mix(in srgb, var(--pos) 40%, transparent); background: color-mix(in srgb, var(--pos) 10%, transparent); }
+.tag.sell { color: var(--neg); border-color: color-mix(in srgb, var(--neg) 40%, transparent); background: color-mix(in srgb, var(--neg) 10%, transparent); }
+.tag.subtle { font-weight: 500; text-transform: none; letter-spacing: 0; }
+.tag.warn  { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); background: color-mix(in srgb, var(--warn) 10%, transparent); }
+.tag.accent{ color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+/* ── Buttons and forms ───────────────────────────────────────────────── */
+
+.btn {
+  font: inherit;
+  font-size: var(--fs-md);
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { background: var(--border-soft); border-color: var(--accent); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled, .btn.spinning { opacity: .5; pointer-events: none; cursor: default; }
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #06121f;
+  font-weight: 600;
+}
+.btn.primary:hover:not(:disabled) { filter: brightness(1.1); }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+
+.field input, .field select, .field textarea {
+  font: inherit;
+  font-size: var(--fs-md);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  min-width: 0;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.chip {
+  font-size: var(--fs-sm);
+  padding: 3px 9px;
+  border-radius: 100px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chip.mode { text-transform: capitalize; }
+
+/* ── Price movement ──────────────────────────────────────────────────── */
+
+/* The flash is the only motion in the interface. It is short enough to read
+   as information rather than decoration. */
+@keyframes flash-up   { from { background: color-mix(in srgb, var(--pos) 26%, transparent); } to { background: transparent; } }
+@keyframes flash-down { from { background: color-mix(in srgb, var(--neg) 26%, transparent); } to { background: transparent; } }
+
+td.bid.up,   td.ask.up   { animation: flash-up   .55s ease-out; }
+td.bid.down, td.ask.down { animation: flash-down .55s ease-out; }
+
+td.bid { color: var(--text); }
+td.ask { color: var(--muted); }
+
+/* ── Result blocks (JSON-ish output on the research page) ────────────── */
+
+.result {
+  font-family: var(--mono);
+  font-size: var(--fs-sm);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  overflow: auto;
+  max-height: 420px;
+  white-space: pre;
+  margin: 0;
+}
+
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: var(--fs-md); }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-family: var(--mono); }

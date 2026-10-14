@@ -1,0 +1,35 @@
+<!-- frontend — partials/footer.html
+     Footer shared by every page.
+
+     Everything here is a value the backend knows and the browser does not:
+     the package build, the terminal build, how far the broker's clock runs
+     ahead of this machine, and whether the account may trade at all. They are
+     server-rendered because there is nothing for the browser to fetch them
+     from more accurately. -->
+<footer class="footer">
+  <div class="footer-col">
+    <span class="footer-label">Package</span>
+    <span class="mono" data-role="package">&mdash;</span>
+  </div>
+  <div class="footer-col">
+    <span class="footer-label">Terminal</span>
+    <span class="mono" data-role="terminal">&mdash;</span>
+  </div>
+  <div class="footer-col">
+    <span class="footer-label">Broker clock</span>
+    <span class="mono" data-role="offset">&mdash;</span>
+  </div>
+  <div class="footer-col">
+    <span class="footer-label">Trading</span>
+    <span class="mono" data-role="permissions">&mdash;</span>
+  </div>
+
+  <div class="footer-spacer"></div>
+
+  <nav class="footer-nav" aria-label="Raw endpoints">
+    <a href="/research">Research API</a>
+    <a href="/routes">Routes</a>
+    <a href="/enums">Enums</a>
+    <a href="/health">Health</a>
+  </nav>
+</footer>

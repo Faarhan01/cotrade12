@@ -1,0 +1,150 @@
+<!doctype html>
+<!-- frontend — pages/index.html
+     ===========================================================================
+     The account overview.
+
+     This is a plain HTML file. Editing the markup here needs no knowledge of
+     Python and no restart of anything that matters; the server reads it from
+     disk on every request.
+
+     Two markers below are expanded by the server before the page is sent:
+
+       * an "include" marker naming a file in frontend/partials/, which is
+         spliced in at that point;
+       * a "bootstrap" marker, replaced with a JSON block carrying the account
+         figures and stream URLs.
+
+     They are written literally below. Note that this comment deliberately does
+     NOT reproduce their exact text: an HTML comment ends at the first close
+     marker it contains, so spelling one out here would terminate the comment
+     early and spill the rest of this text into the visible page.
+
+     Everything else, including every class name and data attribute, is yours
+     to change.
+-->
+<html lang="en">
+<head>
+  <!--#include head-->
+  <title>cony &middot; dashboard</title>
+  <link rel="stylesheet" href="/assets/css/pages/dashboard.css">
+</head>
+
+<body>
+
+<!--#include header-->
+
+<main>
+  <div class="banner" data-role="banner" hidden></div>
+
+  <!-- Account summary. Values are server-rendered so the page is useful
+       before any script runs, and updated in place afterwards. -->
+  <section class="stats">
+    <div class="card">
+      <div class="card-label">Balance</div>
+      <div class="card-value" data-role="balance">&mdash;</div>
+      <div class="card-hint" data-role="account-hint">settled funds</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Equity</div>
+      <div class="card-value" data-role="equity">&mdash;</div>
+      <div class="card-hint">balance plus floating P/L</div>
+    </div>
+
+    <div class="card big">
+      <div class="card-label">Floating P/L</div>
+      <div class="card-value" data-role="floating">&mdash;</div>
+      <div class="card-hint">unrealised, across open positions</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Margin used</div>
+      <div class="card-value" data-role="margin">&mdash;</div>
+      <div class="card-hint" data-role="margin-hint">&mdash;</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Margin level</div>
+      <div class="card-value" data-role="margin-level">&mdash;</div>
+      <div class="card-hint">equity as a percentage of margin</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Leverage</div>
+      <div class="card-value" data-role="leverage">&mdash;</div>
+      <div class="card-hint" data-role="leverage-hint">&mdash;</div>
+    </div>
+  </section>
+
+  <div class="layout">
+
+    <div class="col-main">
+
+      <section class="panel">
+        <header class="panel-head">
+          <h2>Open positions</h2>
+          <div class="panel-actions">
+            <span class="note" data-role="positions-count">&mdash;</span>
+          </div>
+        </header>
+        <div class="panel-body" data-role="positions-body">
+          <div class="empty">Loading<span>reading the account</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-head">
+          <h2>Working orders</h2>
+          <div class="panel-actions">
+            <span class="note" data-role="orders-count">&mdash;</span>
+          </div>
+        </header>
+        <div class="panel-body" data-role="orders-body">
+          <div class="empty">Loading<span>reading the account</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-head">
+          <h2>Recent deals</h2>
+          <div class="panel-actions">
+            <span class="note">last 2 days, broker time</span>
+          </div>
+        </header>
+        <div class="panel-body" data-role="deals-body">
+          <div class="empty">Loading<span>reading history</span></div>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="col-side">
+
+      <section class="panel">
+        <header class="panel-head">
+          <h2>Market watch</h2>
+          <div class="panel-actions">
+            <span class="note" data-role="stream-state">live</span>
+          </div>
+        </header>
+        <div class="panel-body" data-role="watchlist-body">
+          <div class="empty">Loading<span>reading symbols</span></div>
+        </div>
+      </section>
+
+    </div>
+
+  </div>
+</main>
+
+<!--#include footer-->
+
+<!--#bootstrap-->
+
+<script src="/assets/js/lib/format.js"></script>
+<script src="/assets/js/lib/dom.js"></script>
+<script src="/assets/js/lib/api.js"></script>
+<script src="/assets/js/pages/dashboard.js" defer></script>
+
+</body>
+</html>

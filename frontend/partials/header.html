@@ -1,0 +1,34 @@
+<!-- frontend — partials/header.html
+     Top bar shared by every page.
+
+     The pieces that must reflect live state carry data- attributes so
+     dashboard.js can address them without depending on class names:
+
+       data-role="status"   connection state
+       data-role="clock"    broker clock, already offset
+
+     A page that does not load dashboard.js still renders this bar; the values
+     simply stay at their server-rendered defaults. -->
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"></span>
+    <span class="brand-name">Cotrade</span>
+    <span class="brand-sub">MetaTrader 5 Gateway</span>
+  </div>
+
+  <nav class="nav" aria-label="Sections">
+    <a href="/">Dashboard</a>
+    <a href="/ui/symbols">Symbols</a>
+    <a href="/ui/research">Research</a>
+    <a href="/ui/bot">Bot &amp; Database</a>
+  </nav>
+
+  <div class="topbar-status" data-role="status">Loading&hellip;</div>
+
+  <div class="topbar-right">
+    <span class="chip" data-role="account" title="Account number">&mdash;</span>
+    <span class="chip" data-role="server">&mdash;</span>
+    <span class="chip mode" data-role="mode">&mdash;</span>
+    <time class="clock mono" data-role="clock">&mdash;</time>
+  </div>
+</header>

@@ -1,0 +1,103 @@
+/* frontend — pages/symbols.css */
+
+.search-pad, .form-pad { padding: 14px 15px; }
+
+.search-status {
+  font-size: var(--fs-sm);
+  min-height: 18px;
+  margin-top: 8px;
+}
+.search-status.error { color: var(--neg); }
+.search-status.busy  { color: var(--muted); }
+
+.symbol-list { max-height: 560px; overflow-y: auto; }
+
+.symbol-list button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 8px 13px;
+  border: none;
+  border-bottom: 1px solid var(--border-soft);
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.symbol-list button:hover { background: var(--surface-2); }
+.symbol-list button[aria-selected="true"] {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-left-color: var(--accent);
+}
+.symbol-list .name { font-weight: 550; }
+.symbol-list .desc {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-pad { padding: 15px; }
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px 22px;
+  padding: 15px;
+}
+.detail-grid section h3 {
+  margin: 0 0 6px;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  font-weight: 550;
+}
+.detail-grid section dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 12px;
+  font-size: var(--fs-md);
+}
+.detail-grid section dt { color: var(--muted); }
+.detail-grid section dd { margin: 0; font-family: var(--mono); text-align: right; }
+
+/* ── Price chart ─────────────────────────────────────────────────── */
+
+.chart-wrap { position: relative; }
+.chart-wrap canvas { display: block; width: 100%; }
+/* The empty state sits over the canvas rather than beside it, so the canvas
+   keeps its height and the layout does not jump when data arrives. */
+.chart-wrap .empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.timeframe-picker { display: flex; gap: 2px; }
+
+.timeframe-picker button {
+  font: inherit;
+  font-size: var(--fs-xs);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.timeframe-picker button:hover { background: var(--surface); color: var(--text); }
+.timeframe-picker button[aria-pressed="true"] {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--accent);
+  font-weight: 600;
+}

@@ -1,0 +1,125 @@
+<!doctype html>
+<!-- frontend — pages/bot.html
+     ===========================================================================
+     Bot & Database Inspector: view stored strategies, backtest reports,
+     granular trade history, and database integrity.
+-->
+<html lang="en">
+<head>
+  <!--#include head-->
+  <title>Cotrade &middot; Bot &amp; Database</title>
+  <link rel="stylesheet" href="/assets/css/pages/dashboard.css">
+  <link rel="stylesheet" href="/assets/css/pages/research.css">
+</head>
+
+<body>
+
+<!--#include header-->
+
+<main>
+  <div class="page-head">
+    <div>
+      <h1>Bot &amp; Database Hub</h1>
+      <p class="lede">
+        Inspect stored trading strategies, backtest performance reports, individual trade logs,
+        and database storage statistics.
+      </p>
+    </div>
+  </div>
+
+  <section class="stats" data-role="db-stats-row">
+    <div class="card">
+      <div class="card-label">Strategies</div>
+      <div class="card-value" data-role="stat-strategies">&mdash;</div>
+      <div class="card-hint">in database</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Backtest Reports</div>
+      <div class="card-value" data-role="stat-reports">&mdash;</div>
+      <div class="card-hint">historical tests</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Pattern Hits</div>
+      <div class="card-value" data-role="stat-hits">&mdash;</div>
+      <div class="card-hint">scanned &amp; recorded</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Cached Bars</div>
+      <div class="card-value" data-role="stat-bars">&mdash;</div>
+      <div class="card-hint">for fast replay</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Database Status</div>
+      <div class="card-value" data-role="stat-integrity">Checking&hellip;</div>
+      <div class="card-hint" data-role="stat-path">&mdash;</div>
+    </div>
+  </section>
+
+  <div class="layout" style="margin-top: 20px;">
+
+    <div class="col-side">
+      <section class="panel">
+        <header class="panel-head">
+          <h2>Bot Capabilities</h2>
+        </header>
+        <div class="panel-body">
+          <ul class="meta-list" style="padding: 12px 16px; margin: 0; list-style: none;">
+            <li style="margin-bottom: 8px;"><strong>Datafeed:</strong> Pulls M1-D1 bars from MetaTrader 5</li>
+            <li style="margin-bottom: 8px;"><strong>Validation:</strong> Pre-checks margin, lot sizing, and stops</li>
+            <li style="margin-bottom: 8px;"><strong>Backtest:</strong> Evaluates t-stat, win rate, and drawdown</li>
+            <li style="margin-bottom: 8px;"><strong>Execution:</strong> Dry-run &amp; live market order support</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top: 16px;">
+        <header class="panel-head">
+          <h2>Maintenance</h2>
+        </header>
+        <div class="panel-body" style="padding: 16px;">
+          <p class="muted" style="margin-top: 0; font-size: 13px;">
+            SQLite runs in WAL mode with auto-indexing. Reclaim space by vacuuming when reports are pruned.
+          </p>
+          <button class="btn" type="button" data-action="db-vacuum">Run Database Vacuum</button>
+          <div class="search-status muted" data-role="vacuum-status" style="margin-top: 8px;"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-main">
+
+      <section class="panel">
+        <header class="panel-head">
+          <h2>Stored Backtest Reports</h2>
+          <div class="panel-actions">
+            <button class="btn tiny" data-action="refresh-reports">Refresh</button>
+          </div>
+        </header>
+        <div class="panel-body" data-role="reports-body">
+          <div class="empty">Loading<span>querying database</span></div>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top: 20px;">
+        <header class="panel-head">
+          <h2>Stored Strategies</h2>
+        </header>
+        <div class="panel-body" data-role="strategies-body">
+          <div class="empty">Loading<span>reading definitions</span></div>
+        </div>
+      </section>
+
+    </div>
+
+  </div>
+</main>
+
+<!--#include footer-->
+
+<!--#bootstrap-->
+<script src="/assets/js/lib/format.js"></script>
+<script src="/assets/js/lib/dom.js"></script>
+<script src="/assets/js/lib/api.js"></script>
+<script src="/assets/js/pages/bot.js" defer></script>
+</body>
+</html>

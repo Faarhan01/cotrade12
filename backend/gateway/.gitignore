@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Gateway runtime output
+*.log
+*.err
+run.log
+run.err
+daemon-test.log
+daemon-test.err
+
+# Tool artefacts
+tools/mt5_api.json
+
+# OS
+.DS_Store
+Thumbs.db

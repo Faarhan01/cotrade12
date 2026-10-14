@@ -1,0 +1,116 @@
+<!doctype html>
+<!-- frontend — pages/symbols.html
+     ===========================================================================
+     Instrument browser.
+
+     The broker exposes 731 instruments and the full listing is 1.5 MB, so it
+     is never fetched wholesale. This page searches through the gateway's own
+     /symbols/search endpoint on demand and shows one instrument at a time in
+     full.
+
+     Every value shown is exactly what MT5 reports, except the pip conversion
+     in the Derived block, which is the gateway's own _derived data and is
+     labelled as such. -->
+<html lang="en">
+<head>
+  <!--#include head-->
+  <title>Cotrade &middot; Symbols</title>
+  <link rel="stylesheet" href="/assets/css/pages/symbols.css">
+</head>
+
+<body>
+
+<!--#include header-->
+
+<main>
+  <div class="page-head">
+    <div>
+      <h1>Symbols</h1>
+      <p class="lede">
+        Search the broker's instrument list, then inspect one symbol in full.
+        Spreads and pip sizes are the gateway's derived values, not guesses.
+      </p>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <div class="col-side">
+      <section class="panel">
+        <header class="panel-head">
+          <h2>Find an instrument</h2>
+          <span class="note" data-role="result-count">&mdash;</span>
+        </header>
+        <div class="panel-body">
+          <div class="search-pad">
+            <div class="field">
+              <label for="q">Name or description</label>
+              <input id="q" type="search" autocomplete="off" spellcheck="false"
+                     placeholder="EUR, gold, BTC, USDJPY&hellip;">
+            </div>
+            <div class="search-status muted" data-role="search-status"></div>
+          </div>
+          <div data-role="symbol-list">
+            <div class="empty">Type to search<span>the list is fetched on demand</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-main">
+      <section class="panel">
+        <header class="panel-head">
+          <h2 data-role="detail-title">Instrument</h2>
+          <div class="panel-actions">
+            <span class="note" data-role="detail-subtitle">&mdash;</span>
+          </div>
+        </header>
+        <div class="panel-body" data-role="detail-body">
+          <div class="empty">Nothing selected<span>pick a symbol on the left</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-head">
+          <h2>Price</h2>
+          <div class="panel-actions">
+            <div class="timeframe-picker" data-role="timeframes" role="group"
+                 aria-label="Timeframe">
+              <button type="button" data-timeframe="M1">M1</button>
+              <button type="button" data-timeframe="M5">M5</button>
+              <button type="button" data-timeframe="M15" aria-pressed="true">M15</button>
+              <button type="button" data-timeframe="M30">M30</button>
+              <button type="button" data-timeframe="H1">H1</button>
+              <button type="button" data-timeframe="H4">H4</button>
+              <button type="button" data-timeframe="D1">D1</button>
+            </div>
+            <span class="note" data-role="chart-status">&mdash;</span>
+          </div>
+        </header>
+        <div class="panel-body">
+          <div class="chart-wrap">
+            <canvas data-role="chart" aria-label="Candlestick price chart"
+                    role="img"></canvas>
+            <div class="empty" data-role="chart-empty">
+              Pick a symbol<span>the chart loads with it</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </div>
+</main>
+
+<!--#include footer-->
+
+<!--#bootstrap-->
+
+<script src="/assets/js/lib/format.js"></script>
+<script src="/assets/js/lib/dom.js"></script>
+<script src="/assets/js/lib/api.js"></script>
+<script src="/assets/js/lib/chart.js"></script>
+<script src="/assets/js/pages/symbols.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,122 @@
+/* frontend — base
+   ---------------------------------------------------------------------------
+   Design tokens, reset and typography.
+
+   Everything visual is driven by the custom properties here. A page stylesheet
+   should never hardcode a colour; if a new one is needed, add a token. That is
+   what makes the light theme a ten-line block at the bottom instead of a
+   second stylesheet.
+
+   No web fonts. A trading desk is frequently offline and a page that renders
+   as Times while a CDN times out looks broken. The system stack is used
+   instead, which also avoids a render-blocking round trip.
+*/
+
+:root {
+  /* Surfaces, dark by default. */
+  --bg: #0a0e14;
+  --surface: #111721;
+  --surface-2: #161d29;
+  --border: #1f2836;
+  --border-soft: #182030;
+
+  /* Text */
+  --text: #e6edf3;
+  --muted: #7d8896;
+
+  /* Semantics */
+  --accent: #58a6ff;
+  --pos: #4dd4ac;
+  --neg: #ff6b6b;
+  --warn: #ffb454;
+
+  /* Shape */
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .22);
+
+  /* Type */
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 12.5px;
+  --fs-base: 14px;
+  --fs-lg: 17px;
+  --fs-xl: 21px;
+  --fs-stat: 25px;
+
+  /* Rhythm */
+  --gap: 12px;
+  --pad: 22px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f8fa;
+    --surface: #ffffff;
+    --surface-2: #f0f3f7;
+    --border: #d8dee6;
+    --border-soft: #e6eaef;
+    --text: #1c2430;
+    --muted: #66707d;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 8px 24px rgba(16, 24, 40, .08);
+  }
+}
+
+/* ── Reset ───────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: var(--fs-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, p, figure { margin: 0; }
+a { color: var(--accent); }
+
+/* Every figure on this site is a value that changes. Tabular figures stop the
+   digits from shifting sideways each time a value updates. */
+.num, .mono, time, td.num, .stat-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+.mono { font-family: var(--mono); }
+
+.muted  { color: var(--muted); }
+.pos    { color: var(--pos); }
+.neg    { color: var(--neg); }
+.flat   { color: var(--muted); }
+
+.ellipsis {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+  }
+}

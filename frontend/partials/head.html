@@ -1,0 +1,19 @@
+<!-- frontend — partials/head.html
+     Shared document head. Pulled in by every page through the include marker
+     so the stylesheet list has one source.
+
+     This comment does not reproduce that marker's exact text on purpose. An
+     HTML comment ends at the first close marker it contains, so writing one
+     out here would terminate the comment early - and, because the splice is
+     not recursive, the stray text would survive into the served page.
+
+     Only three stylesheets load, deliberately. One file per concern would be
+     tidier on disk but costs extra round trips on a page that may be rendering
+     on a slow link; a trading dashboard should paint as soon as possible. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/layout.css">
+<link rel="stylesheet" href="/assets/css/components.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='none' stroke='%234dd4ac' stroke-width='3'/></svg>">

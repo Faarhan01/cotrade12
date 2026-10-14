@@ -1,0 +1,41 @@
+/* frontend — pages/research.css */
+
+.form-pad { padding: 14px 15px; }
+
+.guide {
+  padding: 14px 15px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface-2);
+}
+.guide h3 {
+  margin: 0 0 7px;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  font-weight: 550;
+}
+.guide ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: var(--fs-sm); }
+.guide li { margin: 4px 0; }
+.guide strong { color: var(--text); font-weight: 550; }
+.guide em { font-style: normal; color: var(--warn); }
+
+textarea {
+  font-family: var(--mono);
+  font-size: var(--fs-sm);
+  resize: vertical;
+  width: 100%;
+}
+
+/* Verdict colouring. Only `promising` and `strong` are ever green - a green
+   "noise" would be exactly the misreading this page exists to prevent. */
+.verdict        { font-family: var(--mono); font-weight: 600; }
+.verdict.strong, .verdict.promising { color: var(--pos); }
+.verdict.fragile                     { color: var(--warn); }
+.verdict.noise, .verdict.insufficient,
+.verdict.unresolvable, .verdict.no_trades { color: var(--muted); }
+
+tr.is-tradable td { background: color-mix(in srgb, var(--pos) 6%, transparent); }
+tr.is-marginal  td { background: color-mix(in srgb, var(--warn) 6%, transparent); }
+
+.result-pad { padding: 0 15px 15px; }

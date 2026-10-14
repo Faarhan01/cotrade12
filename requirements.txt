@@ -1,0 +1,7 @@
+# Cotrade - Requirements
+#
+# Core MetaTrader 5 terminal connector (CPython 3.11 Windows):
+MetaTrader5>=5.0.45
+
+# Optional performance acceleration (serializers & vector math fall back gracefully if absent):
+# numpy>=1.26.0

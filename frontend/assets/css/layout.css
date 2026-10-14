@@ -1,0 +1,223 @@
+/* frontend — layout
+   ---------------------------------------------------------------------------
+   Page furniture: top bar, main column, panel shells, footer, and the
+   responsive rules.
+
+   Components (cards, tables, tags) live in components.css. This file is only
+   concerned with where things sit.
+*/
+
+main {
+  padding: 18px var(--pad) 26px;
+  max-width: 1900px;
+  margin: 0 auto;
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────── */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 var(--pad);
+  height: 58px;
+  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand { display: flex; align-items: baseline; gap: 9px; }
+
+.brand-mark {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--pos);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pos) 18%, transparent);
+  align-self: center;
+}
+
+.brand-name { font-size: var(--fs-lg); font-weight: 650; letter-spacing: -.01em; }
+.brand-sub  { color: var(--muted); font-size: var(--fs-md); }
+
+.topbar-status {
+  color: var(--muted);
+  font-size: var(--fs-md);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.dot.ok  { background: var(--pos); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pos) 20%, transparent); }
+.dot.bad { background: var(--neg); box-shadow: 0 0 0 3px color-mix(in srgb, var(--neg) 20%, transparent); }
+
+.clock {
+  color: var(--muted);
+  font-size: var(--fs-md);
+  min-width: 62px;
+  text-align: right;
+}
+
+.nav { display: flex; gap: 4px; }
+
+.nav a {
+  padding: 5px 11px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  text-decoration: none;
+  font-size: var(--fs-md);
+  border: 1px solid transparent;
+  transition: background .15s, color .15s;
+}
+.nav a:hover { background: var(--surface-2); color: var(--text); }
+.nav a[aria-current="page"] {
+  color: var(--text);
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+/* ── Columns ─────────────────────────────────────────────────────────── */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.col-main, .col-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.layout.single { grid-template-columns: minmax(0, 1fr); }
+
+.page-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.page-head h1 {
+  font-size: var(--fs-lg);
+  font-weight: 650;
+  letter-spacing: -.01em;
+}
+
+.page-head .lede {
+  color: var(--muted);
+  font-size: var(--fs-md);
+  max-width: 70ch;
+  margin-top: 3px;
+}
+
+/* ── Panel ───────────────────────────────────────────────────────────── */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 15px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface-2);
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+.panel-head .note {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.panel-body { overflow-x: auto; }
+
+.panel-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ── Banner ──────────────────────────────────────────────────────────── */
+
+.banner {
+  margin: 14px var(--pad) 0;
+  padding: 11px 15px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--border));
+  background: var(--surface);
+  background: color-mix(in srgb, var(--warn) 8%, var(--surface));
+  font-size: var(--fs-md);
+}
+.banner ul { margin: 7px 0 0; padding-left: 20px; color: var(--muted); }
+.banner li { margin: 2px 0; }
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  flex-wrap: wrap;
+  padding: 14px var(--pad);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--fs-base);
+}
+
+.footer-col { display: flex; align-items: baseline; gap: 7px; }
+
+.footer-label {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  opacity: .75;
+}
+
+.footer-spacer { flex: 1 1 auto; }
+
+.footer-nav { display: flex; gap: 16px; }
+.footer-nav a { color: var(--muted); text-decoration: none; }
+.footer-nav a:hover { color: var(--accent); }
+
+/* ── Narrow screens ──────────────────────────────────────────────────── */
+
+@media (max-width: 1080px) {
+  .layout { grid-template-columns: 1fr; }
+  .topbar {
+    height: auto;
+    padding: 10px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .topbar-right { width: 100%; margin-left: 0; flex-wrap: wrap; }
+  main { padding: 14px 16px 22px; }
+  .footer { padding: 14px 16px; gap: 16px; }
+}

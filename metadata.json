@@ -1,0 +1,6 @@
+{
+  "name": "Cotrade",
+  "description": "MetaTrader 5 gateway, real-time trading dashboard, research analytics, and algorithmic strategy engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

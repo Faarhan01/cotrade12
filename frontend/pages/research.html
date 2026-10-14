@@ -1,0 +1,154 @@
+<!doctype html>
+<!-- frontend — pages/research.html
+     ===========================================================================
+     Strategy work: scan for patterns, validate a strategy, backtest it.
+
+     This page is a thin client over /research/*. It deliberately does not
+     compute anything - every verdict, t-statistic and baseline shown here was
+     produced by the backend, which is the only place that has the data and
+     the statistics.
+
+     Read the "How to read this" panel before trusting a number. The follow-
+     through columns answer different questions, and the edge column - the one
+     the verdict is based on - is not the one that looks most impressive. -->
+<html lang="en">
+<head>
+  <!--#include head-->
+  <title>Cotrade &middot; Research</title>
+  <link rel="stylesheet" href="/assets/css/pages/research.css">
+</head>
+
+<body>
+
+<!--#include header-->
+
+<main>
+  <div class="page-head">
+    <div>
+      <h1>Research</h1>
+      <p class="lede">
+        Scan for patterns and their measured follow-through, check a strategy
+        definition, and backtest it. Every figure is computed server-side.
+      </p>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <div class="col-side">
+
+      <section class="panel">
+        <header class="panel-head">
+          <h2>Pattern scan</h2>
+        </header>
+        <div class="panel-body">
+          <div class="form-pad">
+            <form class="form-row" data-form="scan">
+              <div class="field">
+                <label for="scan-symbol">Symbol</label>
+                <input id="scan-symbol" name="symbol" value="EURUSD" autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="scan-timeframe">Timeframe</label>
+                <select id="scan-timeframe" name="timeframe">
+                  <option>M1</option><option>M5</option><option>M15</option>
+                  <option selected>M15</option><option>H1</option><option>H4</option>
+                  <option>D1</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="scan-count">Bars</label>
+                <input id="scan-count" name="count" type="number" value="2000" min="200" step="100">
+              </div>
+              <button class="btn primary" type="submit">Scan</button>
+            </form>
+            <div class="search-status muted" data-role="scan-status"></div>
+          </div>
+          <div data-role="scan-summary"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-head">
+          <h2>Validate a strategy</h2>
+        </header>
+        <div class="panel-body">
+          <div class="form-pad">
+            <form data-form="strategy">
+              <div class="field">
+                <label for="strategy-json">Strategy definition</label>
+                <textarea id="strategy-json" name="spec" rows="9" spellcheck="false"></textarea>
+              </div>
+              <div class="form-row" style="margin-top:10px">
+                <button class="btn" type="button" data-action="load-library">Load a starter</button>
+                <button class="btn" type="submit">Check</button>
+              </div>
+              <div class="search-status muted" data-role="strategy-status"></div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="col-main">
+
+      <section class="panel">
+        <header class="panel-head">
+          <h2>Follow-through</h2>
+          <span class="note" data-role="scan-meta">&mdash;</span>
+        </header>
+        <div class="panel-body" data-role="scan-body">
+          <div class="empty">No scan yet<span>run one on the left</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-head">
+          <h2>Result</h2>
+        </header>
+        <div class="panel-body">
+          <div class="form-pad">
+            <div class="guide">
+              <h3>How to read this</h3>
+              <ul>
+                <li><strong>verdict</strong> decides everything.
+                  <em>noise</em> means do not trade it, whatever the profit column says.</li>
+                <li><strong>win_rate</strong> counts every trade;
+                  <strong>resolved_win_rate</strong> only those that reached
+                  take-profit or stop-loss. They disagree when the exit rule is
+                  loose, and the disagreement is itself the finding.</li>
+                <li><strong>split_check.consistent = false</strong> means the profit
+                  was all in the first half of the sample. That is not a rule.</li>
+                <li>In the pattern table, <strong>edge%</strong> has the market's
+                  own drift removed and is what the verdict is judged on.
+                  <strong>raw%</strong> mostly measures whether the sample
+                  happened to trend.</li>
+                <li><strong>[INVERTED]</strong> means the pattern reliably moves the
+                  other way, which is a tradeable fact even though it is not the
+                  one the pattern claims.</li>
+                <li>An edge that does not replicate across symbols and timeframes
+                  is noise, whatever its t-statistic says.</li>
+              </ul>
+            </div>
+          </div>
+          <div data-role="strategy-output"></div>
+        </div>
+      </section>
+
+    </div>
+
+  </div>
+</main>
+
+<!--#include footer-->
+
+<!--#bootstrap-->
+
+<script src="/assets/js/lib/format.js"></script>
+<script src="/assets/js/lib/dom.js"></script>
+<script src="/assets/js/lib/api.js"></script>
+<script src="/assets/js/pages/research.js" defer></script>
+
+</body>
+</html>

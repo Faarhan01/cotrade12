@@ -1,0 +1,10 @@
+{
+  "name": "cotrade",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "python3 app.py",
+    "build": "python3 run.py db",
+    "start": "python3 app.py"
+  }
+}

@@ -1,0 +1,15 @@
+/* frontend — pages/dashboard.css
+   Only what is unique to the account overview. Everything shared lives in
+   components.css or layout.css. */
+
+/* The market watch flashes bid/ask on every price move. On a busy list that
+   is a lot of motion, so the flash is scoped to this table and is the only
+   animation on the page. */
+#watchlist td { transition: none; }
+
+.streaming .note[data-role="stream-state"] { color: var(--pos); }
+.stream-stale .note[data-role="stream-state"] { color: var(--warn); }
+
+/* First paint before the server fills a panel: keep the placeholder quiet so
+   it does not draw attention away from the real numbers arriving. */
+.loading-cell { color: var(--muted); }
