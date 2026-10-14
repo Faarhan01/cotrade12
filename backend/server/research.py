@@ -21,6 +21,7 @@ import os
 import sys
 import urllib.error
 import urllib.parse
+from datetime import datetime
 from typing import Optional
 
 from server.errors import BadRequest, NotFound, UpstreamUnavailable
@@ -346,5 +347,153 @@ def register(router, engine, base: Optional[str] = None):
         if "error" in result:
             raise BadRequest(result["error"])
         return result
+
+    @router.get("/research/patterns/frequency")
+    def pattern_frequency(params, query, body):
+        """Get pattern frequency statistics."""
+        from database.store import Store
+        symbol = query.get("symbol")
+        try:
+            with Store() as store:
+                freq = store.pattern_frequency(symbol=symbol)
+                return {"symbol": symbol, "patterns": freq}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @router.get("/research/bars/range")
+    def bar_range(params, query, body):
+        """Get cached bar range for a symbol/timeframe."""
+        from database.store import Store
+        symbol = query.get("symbol")
+        timeframe = query.get("timeframe", "M1")
+        try:
+            with Store() as store:
+                r = store.bar_range(symbol, timeframe)
+                return {"symbol": symbol, "timeframe": timeframe, **r}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @router.get("/research/reports/best")
+    def best_reports(params, query, body):
+        """Get best reports ranked by t-statistic."""
+        from database.store import Store
+        limit = int(query.get("limit", 20))
+        try:
+            with Store() as store:
+                reports = store.best_reports(limit=limit)
+                return {"reports": reports, "count": len(reports)}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @router.get("/research/hits/context")
+    def hit_context(params, query, body):
+        """Get indicator context at pattern hits."""
+        from database.store import Store
+        run_id = query.get("run_id")
+        symbol = query.get("symbol")
+        pattern = query.get("pattern")
+        limit = int(query.get("limit", 100))
+        try:
+            with Store() as store:
+                # Get hits first
+                hits = store.hits(pattern=pattern, symbol=symbol, limit=limit)
+                # For each hit, we could fetch context
+                # For now return hits with meta
+                return {"run_id": run_id, "hits": hits, "count": len(hits)}
+        except Exception as e:
+            return {"error": str(e)}
+
+    # ── Strategy Versioning & Export/Import ──────────────────────────────
+
+    @router.get("/research/strategy/{name}/history")
+    def strategy_history(params, query, body):
+        """Get all versions of a strategy."""
+        from database.store import Store
+        name = params["name"]
+        try:
+            with Store() as store:
+                history = store.get_strategy_history(name)
+                return {"name": name, "versions": history}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @router.get("/research/strategy/{name}/version/{version}")
+    def strategy_version(params, query, body):
+        """Get a specific version of a strategy."""
+        from database.store import Store
+        name = params["name"]
+        version = int(params["version"])
+        try:
+            with Store() as store:
+                version_data = store.get_strategy_version(name, version)
+                if not version_data:
+                    raise NotFound(f"Version {version} of strategy '{name}' not found")
+                return version_data
+        except NotFound:
+            raise
+        except Exception as e:
+            return {"error": str(e)}
+
+    @router.post("/research/strategy/{name}/clone")
+    def clone_strategy(params, query, body):
+        """Clone a strategy with a new name."""
+        from database.store import Store
+        name = params["name"]
+        body = body or {}
+        new_name = body.get("new_name")
+        description = body.get("description")
+        if not new_name:
+            raise BadRequest("'new_name' is required")
+        try:
+            with Store() as store:
+                new_id = store.clone_strategy(name, new_name, description)
+                return {"success": True, "new_name": new_name, "id": new_id}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @router.post("/research/strategy/export")
+    def export_strategies(params, query, body):
+        """Export strategies to JSON."""
+        from database.store import Store
+        names = body.get("names") if body else None
+        try:
+            with Store() as store:
+                if names:
+                    strategies = []
+                    for name in names:
+                        s = store.load_strategy(name)
+                        if s:
+                            strategies.append(s.to_dict())
+                else:
+                    strategies = [s.to_dict() for s in store.list_strategies()]
+                return {
+                    "exported_at": datetime.now().isoformat(),
+                    "count": len(strategies),
+                    "strategies": strategies
+                }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @router.post("/research/strategy/import")
+    def import_strategies(params, query, body):
+        """Import strategies from JSON."""
+        from database.store import Store
+        from knowledgebase.strategies import Strategy
+        strategies_data = body.get("strategies") if body else None
+        if not strategies_data:
+            raise BadRequest("'strategies' array required")
+        try:
+            with Store() as store:
+                imported = []
+                for s_data in strategies_data:
+                    try:
+                        plan = Strategy.from_dict(s_data)
+                        store.save_strategy(plan)
+                        imported.append(plan.name)
+                    except Exception as e:
+                        imported.append(f"FAILED: {s_data.get('name', 'unknown')} - {e}")
+                return {"imported": imported, "count": len(imported)}
+        except Exception as e:
+            return {"error": str(e)}
 
     return len(router.list_routes()) - before

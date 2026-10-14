@@ -185,10 +185,10 @@ class Research:
                 out[label] = [
                     {"time": b.time, "value": v}
                     for b, v in zip(bars, values) if v is not None
-                ][-warmup_only:] if warmup_only else [
-                    {"time": b.time, "value": v}
-                    for b, v in zip(bars, values)
                 ]
+            if warmup_only:
+                for label in out:
+                    out[label] = out[label][-warmup_only:]
             return {"symbol": symbol, "timeframe": timeframe, "indicator": name,
                     "series": out, "bars": len(bars)}
 

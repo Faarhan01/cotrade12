@@ -22,6 +22,7 @@ whose verdict is better than `noise`.
 import os
 import sys
 import urllib.parse
+from datetime import datetime
 from typing import Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
@@ -37,15 +38,79 @@ class LiveTrader:
 
     def __init__(self, symbol: str, timeframe: str = "M1",
                  strategy: Optional[Strategy] = None,
-                 magic: int = 0, dry_run: bool = True):
+                 magic: int = 0, dry_run: bool = True,
+                 session_id: Optional[str] = None):
         self.symbol = symbol
         self.timeframe = timeframe
         self.strategy = strategy
         self.magic = magic
         self.dry_run = dry_run
+        self.session_id = session_id
         self.inst = datafeed.instrument(symbol)
         self.pip = self.inst.get("pip") or 1.0
         self.log: List[Dict] = []
+
+        # Create bot session if not provided
+        if self.session_id and not self.dry_run:
+            self._create_bot_session()
+
+    def _create_bot_session(self):
+        """Create a bot session in the database."""
+        try:
+            from database.store import Store
+            with Store() as store:
+                if not self.session_id:
+                    self.session_id = f"bot_{datetime.now().strftime('%Y%m%dT%H%M%S')}"
+                store.create_bot_session(
+                    self.session_id,
+                    self.strategy.name if self.strategy else "unknown",
+                    self.symbol,
+                    self.timeframe,
+                    self.magic,
+                    self.dry_run
+                )
+        except Exception:
+            pass  # Session creation is optional
+
+    def _log_action(self, action: str, symbol: str, side: Optional[str] = None,
+                    volume: Optional[float] = None, price: Optional[float] = None,
+                    success: bool = True, details: str = ""):
+        """Log an action to the bot session."""
+        if not self.session_id:
+            return
+        try:
+            from database.store import Store
+            with Store() as store:
+                store.log_bot_action(
+                    session_id=self.session_id,
+                    action=action,
+                    symbol=symbol,
+                    side=side,
+                    volume=volume,
+                    price=price,
+                    success=success,
+                    details=details
+                )
+        except Exception:
+            pass
+
+    def _update_session(self, trades_count: int = 0, pnl_pips: float = 0.0,
+                        status: str = "running", stopped: bool = False):
+        """Update bot session performance."""
+        if not self.session_id:
+            return
+        try:
+            from database.store import Store
+            with Store() as store:
+                store.update_bot_session(
+                    self.session_id,
+                    trades_count=trades_count,
+                    pnl_pips=pnl_pips,
+                    status=status,
+                    stopped=stopped
+                )
+        except Exception:
+            pass
 
     # ── State ───────────────────────────────────────────────────────────
 
@@ -112,6 +177,9 @@ class LiveTrader:
 
         check = self.check_order(side, lots, sl_pips, tp_pips)
         if not check.get("accepted"):
+            self._log_action("send", self.symbol, side="buy" if side == 1 else "sell",
+                            volume=lots, success=False,
+                            details=f"Order check failed: {check.get('retcode_description')}")
             return {"success": False, "blocked": "order_check",
                     "detail": check.get("retcode_description")}
 
@@ -133,6 +201,16 @@ class LiveTrader:
         result = datafeed._call("POST", "/buy" if side == 1 else "/sell", payload)
         self.log.append({"action": "send", "side": side, "lots": lots,
                          "ok": result.get("success"), "at": price})
+        
+        # Log and update session
+        success = result.get("success", False)
+        self._log_action("send", self.symbol, side="buy" if side == 1 else "sell",
+                         volume=lots, price=price, success=success,
+                         details=comment or f"bot-{side:+d}")
+        
+        if success:
+            self._update_session(trades_count=1, pnl_pips=0.0)
+        
         return result
 
     def close_all(self, magic: Optional[int] = None) -> Dict:
@@ -142,7 +220,12 @@ class LiveTrader:
         payload = {"symbol": self.symbol}
         if magic is not None:
             payload["magic"] = magic
-        return datafeed._call("POST", "/close-all", payload)
+        result = datafeed._call("POST", "/close-all", payload)
+        
+        self._log_action("close_all", self.symbol, success=result.get("success", False),
+                         details=f"magic={magic}" if magic else "all")
+        
+        return result
 
     # ── Cycle ───────────────────────────────────────────────────────────
 

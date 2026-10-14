@@ -38,6 +38,18 @@ SCHEMA: List[str] = [
     )
     """,
 
+    """
+    CREATE TABLE IF NOT EXISTS strategy_versions (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        strategy_id   INTEGER NOT NULL REFERENCES strategies(id) ON DELETE CASCADE,
+        version       INTEGER NOT NULL,
+        snapshot      TEXT    NOT NULL DEFAULT '{}',
+        created       TEXT    NOT NULL DEFAULT (datetime('now'))
+    )
+    """,
+
+    "CREATE INDEX IF NOT EXISTS idx_strategy_versions_strategy ON strategy_versions(strategy_id)",
+
     # ── Indicator reference ───────────────────────────────────────────
     """
     CREATE TABLE IF NOT EXISTS indicators (

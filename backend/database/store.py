@@ -116,7 +116,17 @@ class Store:
             row = self._conn.execute(
                 "SELECT id FROM strategies WHERE name = ?", (d["name"],)
             ).fetchone()
-            return int(row["id"]) if row else 0
+            strategy_id = int(row["id"]) if row else 0
+
+            # Save version snapshot
+            if strategy_id:
+                snapshot = json.dumps(d, default=str)
+                self._conn.execute(
+                    "INSERT INTO strategy_versions (strategy_id, version, snapshot) VALUES (?, ?, ?)",
+                    (strategy_id, d.get("version", 1), snapshot)
+                )
+                self._conn.commit()
+            return strategy_id
 
     def load_strategy(self, name: str):
         """Reconstruct a knowledgebase Strategy, or None."""
@@ -143,6 +153,49 @@ class Store:
             cur = self._conn.execute("DELETE FROM strategies WHERE name = ?", (name,))
             self._conn.commit()
             return cur.rowcount > 0
+
+    def get_strategy_version(self, name: str, version: Optional[int] = None) -> Optional[Dict]:
+        """Get a specific version of a strategy, or the latest if version is None."""
+        if version is None:
+            row = self.query("""
+                SELECT sv.*, s.name FROM strategy_versions sv
+                JOIN strategies s ON s.id = sv.strategy_id
+                WHERE s.name = ? ORDER BY sv.version DESC LIMIT 1
+            """, (name,))
+        else:
+            row = self.query("""
+                SELECT sv.*, s.name FROM strategy_versions sv
+                JOIN strategies s ON s.id = sv.strategy_id
+                WHERE s.name = ? AND sv.version = ?
+            """, (name, version))
+        if not row:
+            return None
+        d = dict(row[0])
+        d["snapshot"] = json.loads(d.get("snapshot") or "{}")
+        return d
+
+    def get_strategy_history(self, name: str) -> List[Dict]:
+        """Get all versions of a strategy."""
+        rows = self.query("""
+            SELECT sv.version, sv.created, sv.snapshot FROM strategy_versions sv
+            JOIN strategies s ON s.id = sv.strategy_id
+            WHERE s.name = ? ORDER BY sv.version
+        """, (name,))
+        for r in rows:
+            r["snapshot"] = json.loads(r.get("snapshot") or "{}")
+        return rows
+
+    def clone_strategy(self, source_name: str, new_name: str, description: Optional[str] = None) -> int:
+        """Clone a strategy with a new name."""
+        from knowledgebase.strategies import Strategy
+        source = self.load_strategy(source_name)
+        if not source:
+            raise ValueError(f"Source strategy '{source_name}' not found")
+        new_strategy = Strategy.from_dict(source.to_dict())
+        new_strategy.name = new_name
+        if description:
+            new_strategy.description = description
+        return self.save_strategy(new_strategy)
 
     # ── Reference data ─────────────────────────────────────────────────
 
@@ -247,6 +300,16 @@ class Store:
                 "VALUES (?,?,?,?,?,?,?,?,?,?)", rows)
             self._conn.commit()
         return len(rows)
+
+    def save_hit_context(self, hit_id: int, indicator: str, value: float) -> int:
+        """Save indicator value at a pattern hit for context analysis."""
+        with self._lock:
+            cur = self._conn.execute(
+                "INSERT OR REPLACE INTO hit_context (hit_id, indicator, value) VALUES (?,?,?)",
+                (hit_id, indicator, value)
+            )
+            self._conn.commit()
+            return cur.lastrowid
 
     def hits(self, pattern: Optional[str] = None, symbol: Optional[str] = None,
              limit: int = 500) -> List[Dict]:
