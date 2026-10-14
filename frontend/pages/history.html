@@ -1,0 +1,112 @@
+<!doctype html>
+<!-- frontend — pages/history.html
+     ===========================================================================
+     Account history: realised P/L, fills, commission and swap over a window.
+
+     The dashboard page shows the last two days and no filters; this page is
+     the long-memory view of the same account. It computes nothing itself -
+     every figure comes from the gateway's /history endpoints, so the numbers
+     here cannot drift from what the API returns.
+-->
+<html lang="en">
+<head>
+  <!--#include head-->
+  <title>Cotrade &middot; Account History</title>
+  <link rel="stylesheet" href="/assets/css/pages/dashboard.css">
+  <link rel="stylesheet" href="/assets/css/pages/research.css">
+</head>
+
+<body>
+
+<!--#include header-->
+
+<main>
+  <div class="page-head">
+    <div>
+      <h1>Account History</h1>
+      <p class="lede">
+        Query closed deals over a date window, with realised P/L, commission
+        and swap shown exactly as MetaTrader 5 reports them.
+      </p>
+    </div>
+  </div>
+
+  <section class="panel">
+    <header class="panel-head">
+      <h2>Window</h2>
+      <span class="note" data-role="window-meta">&mdash;</span>
+    </header>
+    <div class="panel-body">
+      <div class="form-pad">
+        <form class="form-row" data-form="history">
+          <div class="field">
+            <label for="history-from">From</label>
+            <input id="history-from" name="from" type="date">
+          </div>
+          <div class="field">
+            <label for="history-to">To</label>
+            <input id="history-to" name="to" type="date">
+          </div>
+          <div class="field">
+            <label for="history-symbol">Symbol</label>
+            <input id="history-symbol" name="symbol" type="search"
+                   autocomplete="off" spellcheck="false"
+                   placeholder="Optional, exact spelling">
+          </div>
+          <button class="btn primary" type="submit">Load history</button>
+        </form>
+        <div class="search-status muted" data-role="history-status"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats" style="margin-top: 16px;">
+    <div class="card">
+      <div class="card-label">Realised</div>
+      <div class="card-value" data-role="realised">&mdash;</div>
+      <div class="card-hint">gross trade P/L</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Commission</div>
+      <div class="card-value" data-role="commission">&mdash;</div>
+      <div class="card-hint">broker fees</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Swap</div>
+      <div class="card-value" data-role="swap">&mdash;</div>
+      <div class="card-hint">overnight financing</div>
+    </div>
+    <div class="card big">
+      <div class="card-label">Net</div>
+      <div class="card-value" data-role="net">&mdash;</div>
+      <div class="card-hint">realised + commission + swap</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Deals</div>
+      <div class="card-value" data-role="deal-count">&mdash;</div>
+      <div class="card-hint">filled trades in window</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <header class="panel-head">
+      <h2>Closed deals</h2>
+      <span class="note" data-role="side-summary">&mdash;</span>
+    </header>
+    <div class="panel-body" data-role="deals-body">
+      <div class="empty">No window loaded<span>choose dates and load history</span></div>
+    </div>
+  </section>
+</main>
+
+<!--#include footer-->
+
+<!--#bootstrap-->
+
+<script src="/assets/js/lib/format.js"></script>
+<script src="/assets/js/lib/dom.js"></script>
+<script src="/assets/js/lib/api.js"></script>
+<script src="/assets/js/lib/shell.js"></script>
+<script src="/assets/js/pages/history.js" defer></script>
+</body>
+</html>

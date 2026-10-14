@@ -66,7 +66,7 @@ def main():
           f"({value_per_step/100:g} per 0.01 lot)")
 
     section(f"2. DATA - last {DAYS} days of M1")
-    end = datetime.now()
+    end = datetime.now(timezone.utc).replace(tzinfo=None)
     start = end - timedelta(days=DAYS)
     _, bars = call("GET", f"/candles/{q}?timeframe=M1&from={start.date().isoformat()}"
                           f"&to={end.date().isoformat()}")

@@ -198,6 +198,8 @@ def ma_cross(ctx: Context, i: int, fast: int = 20, slow: int = 50,
     f_now, s_now = ctx.value("sma", i, fast), ctx.value("sma", i, slow)
     if f_now is None or s_now is None:
         return 0
+    if confirm_bars > i:
+        return 0
     f_prev = ctx.value("sma", i - confirm_bars, fast)
     s_prev = ctx.value("sma", i - confirm_bars, slow)
     if f_prev is None or s_prev is None:

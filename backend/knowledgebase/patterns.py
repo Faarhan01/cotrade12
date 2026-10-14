@@ -106,7 +106,7 @@ def _hammer(bars: List[Bar], i: int) -> Optional[PatternMatch]:
     if b.lower_wick < 2 * b.body or b.upper_wick > b.body:
         return None
     strength = min(b.lower_wick / max(b.range, 1e-12), 1.0)
-    direction = "bullish" if b.bullish else "bullish"   # hammer signals a reversal up
+    direction = "bullish"   # a hammer is a bullish reversal shape
     return PatternMatch("hammer", i, direction, strength, "reversal up",
                         {"body_ratio": b.body_ratio, "lower_wick": b.lower_wick})
 

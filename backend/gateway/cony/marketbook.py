@@ -63,10 +63,16 @@ class MarketBook:
             return False
 
         with self._lock:
-            if symbol not in self._subscribed:
+            canonical = symbol
+            if canonical not in self._subscribed:
+                for sub in list(self._subscribed):
+                    if sub.casefold() == symbol.strip().casefold():
+                        canonical = sub
+                        break
+            if canonical not in self._subscribed:
                 return False
-            released = mt5.market_book_release(symbol)
-            self._subscribed.discard(symbol)
+            released = mt5.market_book_release(canonical)
+            self._subscribed.discard(canonical)
             return bool(released)
 
     def unsubscribe_all(self) -> List[str]:
@@ -91,16 +97,27 @@ class MarketBook:
         if mt5 is None:
             raise MarketBookError("Not connected to the terminal")
 
-        if symbol not in self._subscribed:
+        with self._lock:
+            subscribed_here = symbol in self._subscribed or any(
+                sub.casefold() == symbol.strip().casefold() for sub in self._subscribed)
+        if not subscribed_here:
             self.subscribe(symbol)
 
-        entries = mt5.market_book_get(symbol)
+        with self._lock:
+            canonical = symbol
+            if canonical not in self._subscribed:
+                for sub in self._subscribed:
+                    if sub.casefold() == symbol.strip().casefold():
+                        canonical = sub
+                        break
+
+        entries = mt5.market_book_get(canonical)
         if entries is None:
             code = mt5.last_error()
-            raise MarketBookError(f"market_book_get('{symbol}') failed: {code}")
+            raise MarketBookError(f"market_book_get('{canonical}') failed: {code}")
         if not entries:
             return {
-                "symbol": symbol,
+                "symbol": canonical,
                 "bids": [],
                 "asks": [],
                 "best_bid": None,
@@ -132,7 +149,7 @@ class MarketBook:
         total = bid_volume + ask_volume
 
         return {
-            "symbol": symbol,
+            "symbol": canonical,
             "bids": bids,
             "asks": asks,
             "best_bid": best_bid,

@@ -39,6 +39,7 @@ python run.py routes
 | `http://localhost:3000/` | **Account Overview** — Live balance, equity, margin, open positions, pending orders, closed deals, and streaming Market Watch. |
 | `http://localhost:3000/ui/symbols` | **Instrument Browser** — Search and inspect specifications, contract sizes, tick sizes, swap rates, and derived pip values. |
 | `http://localhost:3000/ui/research` | **Strategy & Pattern Lab** — Algorithmic pattern scanning, empirical follow-through edge calculation, and historical backtests. |
+| `http://localhost:3000/ui/history` | **Account History** — Date-windowed deals, realised profit, commission, swap, and net profit. |
 | `http://localhost:3000/ui/bot` | **Bot & Database Hub** — Stored trading strategies, backtest reports, individual trade logs, and database maintenance/vacuuming. |
 | `http://localhost:3000/health` | **Health Probe** — Gateway status, active connections, and latency telemetry. |
 | `http://localhost:3000/routes` | **Route Directory** — Interactive JSON catalog of all API routes. |

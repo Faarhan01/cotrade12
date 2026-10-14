@@ -18,50 +18,14 @@
 
   var boot = dom.bootstrap();
   var clockOffset = Number(boot.clock_offset) || 0;
-  var account = boot.account || {};
 
   /* ── Shell ───────────────────────────────────────────────────────── */
 
-  function role(name) {
-    return document.querySelector('[data-role="' + name + '"]');
-  }
+  // Shared header/footer painting now lives in lib/shell.js, so every page
+  // has the same live status and clock rather than only this one.
+  window.shell.start(boot);
 
-  function paintStatus(connected) {
-    var node = role("status");
-    if (!node) return;
-    node.innerHTML = connected
-      ? '<span class="dot ok"></span>Connected'
-      : '<span class="dot bad"></span>Disconnected';
-  }
-
-  function setRole(name, value) {
-    dom.setText(role(name), value);
-  }
-
-  setRole("account", account.login || "—");
-  setRole("server", account.server || "—");
-  setRole("mode", account._trade_mode || account.trade_mode || "—");
-  setRole("account-hint", "account " + (account.login || "—"));
-  setRole("leverage-hint", account.server || "—");
-  setRole("package", boot.package_version || "—");
-  setRole("terminal", boot.terminal && boot.terminal.build
-    ? "build " + boot.terminal.build : "—");
-  setRole("offset", clockOffset
-    ? clockOffset.toFixed(1) + " s offset" : "unknown");
-  setRole("permissions",
-    ((boot.terminal && boot.terminal.trade_allowed) ? "allowed" : "blocked")
-    + " · DLLs "
-    + ((boot.terminal && boot.terminal.dlls_allowed) ? "on" : "off"));
-
-  paintStatus(boot.connected !== false);
-
-  /* ── Broker clock ───────────────────────────────────────────────── */
-
-  function tickClock() {
-    setRole("clock", fmt.clockOnly(clockOffset) + " UTC");
-  }
-  tickClock();
-  setInterval(tickClock, 1000);
+  var paintStatus = window.shell.paintStatus;
 
   /* ── Account figures ────────────────────────────────────────────── */
 

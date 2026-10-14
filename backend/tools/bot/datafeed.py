@@ -76,7 +76,7 @@ def health() -> Dict:
 
 
 def symbol_info(symbol: str) -> Dict:
-    return _call("GET", "/symbol/" + urllib.parse.quote(symbol))
+    return _call("GET", "/symbol/" + urllib.parse.quote(symbol, safe=""))
 
 
 def instrument(symbol: str) -> Dict:
@@ -139,9 +139,9 @@ def money(pips: float, inst: Dict, lots: float = 1.0) -> float:
 def candles(symbol: str, timeframe: str = "M1", count: int = 5000,
             days: Optional[int] = None) -> List[Dict]:
     """Fetch OHLC bars. `days` requests a date window instead of a bar count."""
-    q = urllib.parse.quote(symbol)
+    q = urllib.parse.quote(symbol, safe="")
     if days:
-        end = datetime.now()
+        end = datetime.now(timezone.utc).replace(tzinfo=None)
         start = end - timedelta(days=days)
         path = (f"/candles/{q}?timeframe={timeframe}"
                 f"&from={start.date().isoformat()}&to={end.date().isoformat()}")
@@ -173,7 +173,11 @@ def fetch(symbol: str, timeframe: str = "M1", count: int = 5000,
     """
     if use_cache and store is not None:
         local = cached_bars(store, symbol, timeframe, count)
-        if len(local) >= min(count, 100):
+        # Serve the cache only when it actually covers the request. The old
+        # `min(count, 100)` floor meant a cached 120 bars satisfied a
+        # 5,000-bar backtest, and every t-statistic was then computed on 2%
+        # of the requested sample with nothing saying so.
+        if len(local) >= count:
             return local
     fetched = bars(symbol, timeframe, count, days)
     if store is not None and fetched:

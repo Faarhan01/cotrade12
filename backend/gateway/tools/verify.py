@@ -527,7 +527,7 @@ def main():
     status, _ = call("GET", "/orders?magic=987654")
     check("/orders?magic= filter exists", status == 200, status)
 
-    wide = (datetime.now() - timedelta(days=400)).date().isoformat()
+    wide = (datetime.now(timezone.utc) - timedelta(days=400)).date().isoformat()
     status, wc = call("GET", f"/candles/{target}?timeframe=M1&from={wide}&to={wide[:8]}28")
     check("wide candle window is bounded", status == 200, status)
     check("bounded window reports truncation", wc.get("truncated") is True, wc.get("count"))
@@ -578,7 +578,7 @@ def main():
         # resolved path to the assets root is the only thing stopping a read
         # of the Python source, which is why each of these is checked.
         for attempt in ("/assets/../dashboard/views.py",
-                        "/assets/../../backend/dashboard/assets.py",
+                        "/assets/../../backend/frontconnect/assets.py",
                         "/assets/css/../../../dashboard/__init__.py",
                         "/assets/..%2f..%2fdashboard%2fviews.py",
                         "/assets/css/%2e%2e/%2e%2e/dashboard/views.py"):

@@ -46,13 +46,13 @@
             <form class="form-row" data-form="scan">
               <div class="field">
                 <label for="scan-symbol">Symbol</label>
-                <input id="scan-symbol" name="symbol" value="EURUSD" autocomplete="off">
+                <input id="scan-symbol" name="symbol" value="" autocomplete="off" placeholder="Symbol (exact MT5 spelling)">
               </div>
               <div class="field">
                 <label for="scan-timeframe">Timeframe</label>
                 <select id="scan-timeframe" name="timeframe">
-                  <option>M1</option><option>M5</option><option>M15</option>
-                  <option selected>M15</option><option>H1</option><option>H4</option>
+                  <option>M1</option><option>M5</option><option selected>M15</option>
+                  <option>M30</option><option>H1</option><option>H4</option>
                   <option>D1</option>
                 </select>
               </div>
@@ -148,6 +148,7 @@
 <script src="/assets/js/lib/format.js"></script>
 <script src="/assets/js/lib/dom.js"></script>
 <script src="/assets/js/lib/api.js"></script>
+<script src="/assets/js/lib/shell.js"></script>
 <script src="/assets/js/pages/research.js" defer></script>
 
 </body>

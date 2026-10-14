@@ -49,8 +49,9 @@ from server.streaming import (
     tick_producer,
 )
 from deamon.config import config
-from deamon.logger import get_logger
+from deamon.logger import setup_logging, get_logger
 
+setup_logging(config.log_level, config.log_file)
 logger = get_logger("deamon")
 
 # Streaming connections currently open, so shutdown can stop them.
@@ -271,6 +272,8 @@ class GatewayHandler(BaseHTTPRequestHandler):
                 status=409,
             )
         except MT5ConnectionError as exc:
+            self.send_error_json(str(exc), 503, "MT5Disconnected")
+        except ConnectionError as exc:
             self.send_error_json(str(exc), 503, "MT5Disconnected")
         except MarketBookError as exc:
             # A broker not offering depth of market is a normal condition on

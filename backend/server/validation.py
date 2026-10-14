@@ -9,7 +9,7 @@ BadRequest with a message that names the offending field and what was
 expected, because the caller is usually an agent acting on the text.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from server.errors import BadRequest
@@ -125,11 +125,16 @@ def when(value, field: str, default=None) -> datetime:
             f"'{field}' is required. Use ISO format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS"
         )
     if isinstance(value, datetime):
+        if value.tzinfo is not None:
+            value = value.astimezone(timezone.utc).replace(tzinfo=None)
         return value
     text = str(value).strip()
     for parser in (datetime.fromisoformat,):
         try:
-            return parser(text.replace("Z", "+00:00"))
+            parsed = parser(text.replace("Z", "+00:00"))
+            if parsed.tzinfo is not None:
+                parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+            return parsed
         except ValueError:
             pass
     for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%Y/%m/%d", "%d.%m.%Y"):
@@ -145,7 +150,7 @@ def when(value, field: str, default=None) -> datetime:
 
 def date_range(from_value, to_value, default_days: int = 7):
     """Resolve a from/to pair, checking the order."""
-    now = datetime.now()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     start = when(from_value, "from", default=now - timedelta(days=default_days))
     end = when(to_value, "to", default=now)
     if start > end:

@@ -5,35 +5,35 @@
 (function () {
   "use strict";
 
-  const api = window.cony?.api;
-  const dom = window.cony?.dom;
-  const fmt = window.cony?.format;
+  const api = window.api;
+  const dom = window.dom;
+  const fmt = window.fmt;
 
   async function loadStats() {
     try {
       const stats = await api.get("/db/stats");
       const integrity = await api.get("/db/integrity").catch(() => ({ status: "ok" }));
 
-      const stratsEl = dom.find("[data-role=stat-strategies]");
-      const reportsEl = dom.find("[data-role=stat-reports]");
-      const hitsEl = dom.find("[data-role=stat-hits]");
-      const barsEl = dom.find("[data-role=stat-bars]");
-      const pathEl = dom.find("[data-role=stat-path]");
-      const integEl = dom.find("[data-role=stat-integrity]");
+      const stratsEl = dom.$("[data-role=stat-strategies]");
+      const reportsEl = dom.$("[data-role=stat-reports]");
+      const hitsEl = dom.$("[data-role=stat-hits]");
+      const barsEl = dom.$("[data-role=stat-bars]");
+      const pathEl = dom.$("[data-role=stat-path]");
+      const integEl = dom.$("[data-role=stat-integrity]");
 
       if (stratsEl) stratsEl.textContent = stats.strategies ?? "0";
       if (reportsEl) reportsEl.textContent = stats.reports ?? "0";
       if (hitsEl) hitsEl.textContent = stats.pattern_hits ?? "0";
       if (barsEl) barsEl.textContent = stats.cached_bars ?? "0";
-      if (pathEl) pathEl.textContent = (stats.path || "").split("/").pop() || "peron.db";
-      if (integEl) integEl.textContent = integrity.status === "ok" ? "Healthy (WAL)" : integrity.status;
+      if (pathEl) pathEl.textContent = String(stats.path || "").split(/[\\\/]/).pop() || "database";
+      if (integEl) integEl.textContent = integrity.status === "ok" ? "Healthy (WAL)" : (integrity.status || "—");
     } catch (err) {
       console.warn("Failed to load DB stats:", err);
     }
   }
 
   async function loadReports() {
-    const container = dom.find("[data-role=reports-body]");
+    const container = dom.$("[data-role=reports-body]");
     if (!container) return;
 
     try {
@@ -66,26 +66,26 @@
         const badgeClass = isGood ? "badge-good" : (verdict === "noise" ? "badge-bad" : "badge-neutral");
 
         html += '<tr>' +
-          '<td><strong>' + dom.escape(r.strategy_name) + '</strong></td>' +
-          '<td>' + dom.escape(r.symbol) + '</td>' +
-          '<td>' + dom.escape(r.timeframe) + '</td>' +
-          '<td>' + r.trades + '</td>' +
+          '<td><strong>' + fmt.escapeHtml(r.strategy_name) + '</strong></td>' +
+          '<td>' + fmt.escapeHtml(r.symbol) + '</td>' +
+          '<td>' + fmt.escapeHtml(r.timeframe) + '</td>' +
+          '<td>' + fmt.escapeHtml(r.trades) + '</td>' +
           '<td>' + winRate + '</td>' +
           '<td>' + netPips + '</td>' +
           '<td>' + tStat + '</td>' +
-          '<td><span class="' + badgeClass + '">' + dom.escape(verdict) + '</span></td>' +
+          '<td><span class="' + badgeClass + '">' + fmt.escapeHtml(verdict) + '</span></td>' +
           '</tr>';
       }
 
       html += '</tbody></table>';
       container.innerHTML = html;
     } catch (err) {
-      container.innerHTML = '<div class="empty error">Failed to load reports<span>' + dom.escape(err.message) + '</span></div>';
+      container.innerHTML = '<div class="empty error">Failed to load reports<span>' + fmt.escapeHtml(err.message) + '</span></div>';
     }
   }
 
   async function loadStrategies() {
-    const container = dom.find("[data-role=strategies-body]");
+    const container = dom.$("[data-role=strategies-body]");
     if (!container) return;
 
     try {
@@ -108,10 +108,10 @@
 
       for (const s of rows) {
         html += '<tr>' +
-          '<td><strong>' + dom.escape(s.name) + '</strong></td>' +
-          '<td>' + dom.escape(s.symbol || "any") + '</td>' +
-          '<td>' + dom.escape(s.timeframe || "M1") + '</td>' +
-          '<td class="mono">' + dom.escape(s.entry_name) + '</td>' +
+          '<td><strong>' + fmt.escapeHtml(s.name) + '</strong></td>' +
+          '<td>' + fmt.escapeHtml(s.symbol || "any") + '</td>' +
+          '<td>' + fmt.escapeHtml(s.timeframe || "M1") + '</td>' +
+          '<td class="mono">' + fmt.escapeHtml(s.entry_name) + '</td>' +
           '<td>v' + (s.version || 1) + '</td>' +
           '</tr>';
       }
@@ -124,8 +124,8 @@
   }
 
   function setupActions() {
-    const vacuumBtn = dom.find("[data-action=db-vacuum]");
-    const vacuumStatus = dom.find("[data-role=vacuum-status]");
+    const vacuumBtn = dom.$("[data-action=db-vacuum]");
+    const vacuumStatus = dom.$("[data-role=vacuum-status]");
     if (vacuumBtn) {
       vacuumBtn.addEventListener("click", async () => {
         vacuumBtn.disabled = true;
@@ -142,7 +142,7 @@
       });
     }
 
-    const refreshBtn = dom.find("[data-action=refresh-reports]");
+    const refreshBtn = dom.$("[data-action=refresh-reports]");
     if (refreshBtn) {
       refreshBtn.addEventListener("click", () => {
         loadReports();

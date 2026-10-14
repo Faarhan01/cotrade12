@@ -12,7 +12,9 @@ frontend/
 ├── pages/                  one .html per screen
 │   ├── index.html          /          account overview
 │   ├── symbols.html        /ui/symbols     instrument browser
-│   └── research.html       /ui/research    patterns, strategies, backtests
+│   ├── research.html       /ui/research    patterns, strategies, backtests
+│   ├── history.html        /ui/history     account history and P/L
+│   └── bot.html            /ui/bot         strategies, reports, database
 ├── partials/               shared fragments, one source
 │   ├── head.html           charset, stylesheets
 │   ├── header.html         top bar, nav, connection state
@@ -24,7 +26,7 @@ frontend/
     │   ├── components.css  cards, tables, tags, buttons, forms
     │   └── pages/          styles used by exactly one page
     └── js/
-        ├── lib/            shared: format, dom, api
+        ├── lib/            shared: format, dom, api, shell
         └── pages/          one script per page
 ```
 
@@ -34,6 +36,8 @@ frontend/
 |---|---|
 | `/` | `pages/index.html` |
 | `/ui/{page}` | `pages/{page}.html` |
+| `/ui/history` | `pages/history.html` |
+| `/ui/bot` | `pages/bot.html` |
 | `/assets/{path...}` | `assets/**` |
 
 `/ui/` exists because `/research`, `/account` and friends are the JSON API.

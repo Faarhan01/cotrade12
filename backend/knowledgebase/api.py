@@ -361,10 +361,12 @@ class Research:
 
         inst = datafeed.instrument(symbol)
         if spread_pips is not None:
-            inst["spread_pips"] = spread_pips
+            plan.spread_pips = spread_pips
+        elif not plan.spread_pips:
+            plan.spread_pips = inst.get("spread_pips", 0.0)
+        inst["spread_pips"] = plan.spread_pips
         plan.symbol = symbol
         plan.timeframe = timeframe
-        plan.spread_pips = inst.get("spread_pips", 0.0)
 
         result = run(plan, bars, inst, warmup=warmup)
         report = result.to_dict()
@@ -387,7 +389,6 @@ class Research:
 
         if self._store is not None:
             self._store.save_report({
-                "run_id": "api",
                 "strategy_name": plan.name,
                 "strategy_snapshot": plan.to_dict(),
                 "symbol": symbol,

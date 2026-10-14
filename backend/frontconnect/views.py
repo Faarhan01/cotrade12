@@ -34,7 +34,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
-from dashboard import assets
+from frontconnect import assets
 
 # How many Market Watch instruments to show. The broker exposes 731 symbols
 # but only a few dozen are flagged visible/selected; the rest are noise here.
@@ -137,8 +137,9 @@ def _watchlist(engine) -> List[Dict]:
             pip_size = (info.get("_derived") or {}).get("pip_size")
         except Exception:                               # noqa: BLE001
             pip_size = None
-        if not pip_size and s.get("point"):
-            pip_size = float(s["point"]) * 10
+        # No `point * 10` fallback here: the engine derives the true pip size
+        # and that shortcut is wrong outside 5/3-digit FX. Better a missing
+        # spread than a confidently wrong one.
         out.append({
             "name": name,
             "bid": s.get("bid"),
@@ -224,7 +225,7 @@ def context(engine, page: str = "index",
         "deals": out.get("deals") or [],
         "watchlist": watch_names,
         "watchlist_rows": watch,
-        "default_symbol": (watch_names[0] if watch_names else "EURUSD"),
+        "default_symbol": (watch_names[0] if watch_names else None),
         "portfolio_stream": "/stream/portfolio?interval=1",
         "tick_stream": ("/stream/ticks?symbols=" + ",".join(watch_names)
                         + "&interval=1") if watch_names else None,

@@ -80,9 +80,16 @@ class Store:
     # ── Strategies ─────────────────────────────────────────────────────
 
     def save_strategy(self, strategy) -> int:
-        """Insert or update a Strategy from the knowledgebase."""
+        """
+        Insert or update a Strategy from the knowledgebase, atomically.
+
+        A select-then-write pair has a race window: two writers can both see
+        no row and both insert, and the second fails on UNIQUE(name). SQLite
+        has no INSERT OR REPLACE on a trigger-maintained table without
+        rebuilding it, so an explicit upsert keeps one statement, one
+        transaction and the trg_strategies_updated trigger intact.
+        """
         d = strategy.to_dict() if hasattr(strategy, "to_dict") else dict(strategy)
-        existing = self.query("SELECT id FROM strategies WHERE name = ?", (d["name"],))
         values = (
             d.get("name"),
             d.get("description", ""),
@@ -96,25 +103,20 @@ class Store:
             json.dumps(d.get("tags", [])),
             1 if d.get("enabled", True) else 0,
         )
+        placeholders = ", ".join("?" for _ in STRATEGY_FIELDS)
+        updates = ", ".join(f"{f}=excluded.{f}" for f in STRATEGY_FIELDS[1:])
+        sql = (
+            f"INSERT INTO strategies ({', '.join(STRATEGY_FIELDS)}) "
+            f"VALUES ({placeholders}) "
+            f"ON CONFLICT(name) DO UPDATE SET {updates}"
+        )
         with self._lock:
-            if existing:
-                self._conn.execute(
-                    f"UPDATE strategies SET {', '.join(f'{f} = ?' for f in STRATEGY_FIELDS[1:])}"
-                    " WHERE name = ?", values[1:] + (d["name"],))
-                # The UPDATE branch needs its own commit. sqlite3 opens an
-                # implicit transaction on DML, so without this the change sat
-                # uncommitted and was rolled back at shutdown - the write only
-                # appeared to work when some later call happened to commit on
-                # its behalf. It also made vacuum() raise "cannot VACUUM from
-                # within a transaction" whenever an UPDATE was pending.
-                self._conn.commit()
-                return existing[0]["id"]
-            placeholders = ", ".join("?" for _ in STRATEGY_FIELDS)
-            cur = self._conn.execute(
-                f"INSERT INTO strategies ({', '.join(STRATEGY_FIELDS)}) "
-                f"VALUES ({placeholders})", values)
+            self._conn.execute(sql, values)
             self._conn.commit()
-            return cur.lastrowid
+            row = self._conn.execute(
+                "SELECT id FROM strategies WHERE name = ?", (d["name"],)
+            ).fetchone()
+            return int(row["id"]) if row else 0
 
     def load_strategy(self, name: str):
         """Reconstruct a knowledgebase Strategy, or None."""
@@ -146,44 +148,47 @@ class Store:
 
     def sync_indicators(self, catalogue: Dict[str, Dict]) -> int:
         """Upsert the indicator reference table from the knowledgebase."""
-        n = 0
-        for name, meta in catalogue.items():
-            existing = self.query("SELECT id FROM indicators WHERE name = ?", (name,))
-            if existing:
-                self.execute(
-                    "UPDATE indicators SET category=?, inputs=?, description=? WHERE id=?",
-                    (meta.get("category", "trend"),
-                     json.dumps(meta.get("inputs", ["close"])),
-                     meta.get("description", ""), existing[0]["id"]))
-            else:
-                self.execute(
-                    "INSERT INTO indicators (name, category, inputs, description) "
-                    "VALUES (?,?,?,?)",
-                    (name, meta.get("category", "trend"),
-                     json.dumps(meta.get("inputs", ["close"])),
-                     meta.get("description", "")))
-            n += 1
-        return n
+        updates = ", ".join(f"{f}=excluded.{f}" for f in
+                            ("category", "inputs", "description"))
+        sql = (
+            "INSERT INTO indicators (name, category, inputs, description) "
+            "VALUES (?, ?, ?, ?) "
+            f"ON CONFLICT(name) DO UPDATE SET {updates}"
+        )
+        with self._lock:
+            for name, meta in catalogue.items():
+                self._conn.execute(sql, (
+                    name,
+                    meta.get("category", "trend"),
+                    json.dumps(meta.get("inputs", ["close"])),
+                    meta.get("description", ""),
+                ))
+            # One transaction for the whole catalogue. The previous per-row
+            # execute() committed after each row, so a failure halfway through
+            # left a partial sync behind with no way to tell it apart from a
+            # complete one.
+            self._conn.commit()
+            return len(catalogue)
 
     def sync_patterns(self, catalogue: Dict[str, Dict]) -> int:
         """Upsert the pattern reference table from the knowledgebase."""
-        n = 0
-        for name, meta in catalogue.items():
-            existing = self.query("SELECT id FROM patterns WHERE name = ?", (name,))
-            if existing:
-                self.execute(
-                    "UPDATE patterns SET family=?, direction=?, description=? WHERE id=?",
-                    (meta.get("family", "candlestick"),
-                     meta.get("direction", "neutral"),
-                     meta.get("description", ""), existing[0]["id"]))
-            else:
-                self.execute(
-                    "INSERT INTO patterns (name, family, direction, description) "
-                    "VALUES (?,?,?,?)",
-                    (name, meta.get("family", "candlestick"),
-                     meta.get("direction", "neutral"), meta.get("description", "")))
-            n += 1
-        return n
+        updates = ", ".join(f"{f}=excluded.{f}" for f in
+                            ("family", "direction", "description"))
+        sql = (
+            "INSERT INTO patterns (name, family, direction, description) "
+            "VALUES (?, ?, ?, ?) "
+            f"ON CONFLICT(name) DO UPDATE SET {updates}"
+        )
+        with self._lock:
+            for name, meta in catalogue.items():
+                self._conn.execute(sql, (
+                    name,
+                    meta.get("family", "candlestick"),
+                    meta.get("direction", "neutral"),
+                    meta.get("description", ""),
+                ))
+            self._conn.commit()
+            return len(catalogue)
 
     def list_patterns(self) -> List[Dict]:
         return self.query("SELECT * FROM patterns ORDER BY family, name")

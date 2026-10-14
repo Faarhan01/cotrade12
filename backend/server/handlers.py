@@ -203,14 +203,15 @@ class RouteHandlers:
         @r.get("/symbols/search")
         def symbol_search(params, query, body):
             """Substring match on symbol name or description."""
-            needle = (query.get("q") or "").strip().upper()
+            needle = (query.get("q") or "").strip()
             if not needle:
                 raise BadRequest("'q' is required")
+            folded = needle.casefold()
             found = engine.get_symbols()
             hits = [
                 s for s in found
-                if needle in s.get("name", "").upper()
-                or needle in (s.get("description") or "").upper()
+                if folded in str(s.get("name") or "").casefold()
+                or folded in str(s.get("description") or "").casefold()
             ]
             return {"count": len(hits), "query": needle, "symbols": hits}
 
@@ -469,7 +470,7 @@ class RouteHandlers:
             """
             result = engine.check_order(_build_request(body))
             retcode = result.get("retcode", 0)
-            accepted = enums.retcode_name(retcode) in ("Done", "Done Partial")
+            accepted = retcode in enums.accepted_retcodes()
             return {
                 "success": accepted,
                 "accepted": accepted,
@@ -725,7 +726,7 @@ class RouteHandlers:
                 "realized_profit": round(realized, 2),
                 "commission": round(commission, 2),
                 "swap": round(swaps, 2),
-                "net": round(realized + swaps, 2),
+                "net": round(realized + swaps + commission, 2),
                 "by_side": {k: round(x, 2) for k, x in by_side.items()},
             }
 
@@ -792,11 +793,11 @@ class RouteHandlers:
         _workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         _frontend_hint = os.environ.get("CONY_FRONTEND_DIR") or os.path.join(_workspace_root, "frontend")
         try:
-            from dashboard import register as _dashboard_routes
+            from frontconnect import register as _dashboard_routes
 
             added = _dashboard_routes(r, engine)
             if added:
-                from dashboard import assets as _assets
+                from frontconnect import assets as _assets
                 logger.info("dashboard enabled: / and /ui/{page} from %s "
                             "(pages: %s)", _assets.FRONTEND_DIR,
                             ", ".join(_assets.available_pages()) or "none")

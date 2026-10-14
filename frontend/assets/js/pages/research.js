@@ -12,6 +12,8 @@
 
   var boot = dom.bootstrap();
   var clockOffset = Number(boot.clock_offset) || 0;
+  window.shell.start(boot);
+  var lastScanSymbol = boot.default_symbol || "";
 
   function status(node, text, kind) {
     var el = document.querySelector('[data-role="' + node + '"]');
@@ -123,11 +125,13 @@
     scanForm.addEventListener("submit", function (event) {
       event.preventDefault();
       var button = scanForm.querySelector("button[type=submit]");
+      var scanSymbol = scanForm.elements.symbol.value.trim();
       var payload = {
-        symbol: scanForm.elements.symbol.value.trim(),
+        symbol: scanSymbol,
         timeframe: scanForm.elements.timeframe.value,
         count: Number(scanForm.elements.count.value) || 2000
       };
+      lastScanSymbol = scanSymbol || lastScanSymbol;
       if (button) button.classList.add("spinning");
       status("scan-status", "scanning " + payload.symbol + "…", "busy");
 
@@ -213,9 +217,14 @@
           if (!result.valid) { showError(result); return; }
           // Valid, so run it. Backtesting is the only thing that says
           // anything about whether the definition is any good.
+          var btSymbol = lastScanSymbol || boot.default_symbol;
+          if (!btSymbol) {
+            showError({ valid: true, note: "No symbol available. Run a pattern scan first so a symbol is selected." });
+            return;
+          }
           return api.post("/research/backtest", {
             strategy: isString ? payload : result.strategy,
-            symbol: (boot.default_symbol || "EURUSD"),
+            symbol: btSymbol,
             timeframe: "M15",
             count: 2000
           });

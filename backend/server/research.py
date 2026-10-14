@@ -97,8 +97,8 @@ def _gateway_fetch(symbol: str, timeframe: str = "M1", count: int = 2000,
     # safe="" so a symbol containing a slash cannot escape its path segment.
     q = urllib.parse.quote(symbol, safe="")
     if days:
-        from datetime import datetime, timedelta
-        end = datetime.now()
+        from datetime import datetime, timedelta, timezone
+        end = datetime.now(timezone.utc).replace(tzinfo=None)
         start = end - timedelta(days=days)
         path = (f"/candles/{q}?timeframe={timeframe}"
                 f"&from={start.date().isoformat()}&to={end.date().isoformat()}")
@@ -301,8 +301,11 @@ def register(router, engine, base: Optional[str] = None):
             specs = research.library()
         if not isinstance(specs, list):
             raise BadRequest("'strategies' must be a list")
+        symbol = body.get("symbol")
+        if not symbol:
+            raise BadRequest("'symbol' is required")
         return research.sweep(
-            specs, body.get("symbol") or "EURUSD",
+            specs, symbol,
             timeframe=body.get("timeframe", "M1"),
             count=int(body.get("count", 4000)),
         )

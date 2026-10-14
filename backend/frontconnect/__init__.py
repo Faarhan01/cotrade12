@@ -31,7 +31,7 @@ others; a stripped-down gateway serves JSON and nothing else.
 from server import responses
 from server.errors import NotFound
 
-from dashboard import assets, views
+from frontconnect import assets, views
 
 # What each page needs from the server.
 #
@@ -45,7 +45,8 @@ _SECTIONS = {
     "index": ("account", "terminal", "totals", "positions",
               "orders", "deals", "watchlist"),
     "symbols": ("account", "terminal"),
-    "research": ("account", "terminal"),
+    "research": ("account", "terminal", "watchlist"),
+    "history": ("account", "terminal"),
 }
 
 _DEFAULT_SECTIONS = ("account", "terminal")

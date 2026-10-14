@@ -79,6 +79,8 @@ python run.py server --port 8890
 | <http://127.0.0.1:8890/> | Account overview — balance, equity, positions, orders, deals, live Market Watch |
 | <http://127.0.0.1:8890/ui/symbols> | Instrument browser with full derived spec |
 | <http://127.0.0.1:8890/ui/research> | Pattern scans, strategy validation, backtests |
+| <http://127.0.0.1:8890/ui/history> | Account history, filters, realised/net P/L |
+| <http://127.0.0.1:8890/ui/bot> | Stored strategies, reports, database tools |
 
 Plain HTML, CSS and JavaScript. No npm, no build step, no CDN, no web fonts —
 it renders with no internet access, which is the normal condition for a trading

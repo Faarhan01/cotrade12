@@ -8,7 +8,7 @@ never has to drop down to the raw module. The engine holds no HTTP concepts
 and no configuration of its own beyond the connection manager it is given.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 import threading
 import time
 from typing import List, Optional
@@ -223,7 +223,7 @@ class MT5Engine:
             if self._name_cache and (time.monotonic() - self._name_cache_at) < self._name_ttl:
                 return self._name_cache
             everything = self.mt5.symbols_get() or ()
-            self._name_cache = {s.name.upper(): s.name for s in everything}
+            self._name_cache = {s.name.casefold(): s.name for s in everything}
             self._name_cache_at = time.monotonic()
             return self._name_cache
 
@@ -247,7 +247,7 @@ class MT5Engine:
         if self.mt5.symbol_info(symbol) is not None:
             return symbol
 
-        found = self._symbol_name_map().get(symbol.strip().upper())
+        found = self._symbol_name_map().get(symbol.strip().casefold())
         if found:
             return found
 
@@ -550,7 +550,7 @@ class MT5Engine:
         self.ensure_connected()
         name = self._ready_symbol(symbol)
         rates = (
-            self.mt5.copy_rates_from(name, timeframe, datetime.now(), count)
+            self.mt5.copy_rates_from(name, timeframe, datetime.now(timezone.utc).replace(tzinfo=None), count)
             if date_from is None
             else self.mt5.copy_rates_from(name, timeframe, date_from, count)
         )

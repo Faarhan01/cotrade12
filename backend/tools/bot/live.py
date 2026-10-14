@@ -21,6 +21,7 @@ whose verdict is better than `noise`.
 
 import os
 import sys
+import urllib.parse
 from typing import Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
@@ -63,7 +64,8 @@ class LiveTrader:
         return datafeed._call("GET", "/account")
 
     def open_positions(self) -> Dict:
-        return datafeed._call("GET", f"/positions?symbol={self.symbol}")
+        sym = urllib.parse.quote(self.symbol, safe="")
+        return datafeed._call("GET", f"/positions?symbol={sym}")
 
     # ── Sizing ──────────────────────────────────────────────────────────
 
@@ -84,7 +86,7 @@ class LiveTrader:
         Dry run through the terminal. Catches insufficient margin, stops in
         the freeze zone and unsupported filling modes before anything is sent.
         """
-        tick = datafeed._call("GET", f"/tick/{self.symbol.replace(' ', '%20')}")
+        tick = datafeed._call("GET", f"/tick/{urllib.parse.quote(self.symbol, safe="")}")
         price = tick["ask"] if side == 1 else tick["bid"]
         payload = {
             "symbol": self.symbol,
@@ -113,7 +115,7 @@ class LiveTrader:
             return {"success": False, "blocked": "order_check",
                     "detail": check.get("retcode_description")}
 
-        tick = datafeed._call("GET", f"/tick/{self.symbol.replace(' ', '%20')}")
+        tick = datafeed._call("GET", f"/tick/{urllib.parse.quote(self.symbol, safe="")}")
         price = tick["ask"] if side == 1 else tick["bid"]
         digits = int(self.inst.get("digits") or 5)
         payload = {
@@ -151,7 +153,7 @@ class LiveTrader:
         """
         bars = self.bars()
         signal = self.current_signal(bars)
-        tick = datafeed._call("GET", f"/tick/{self.symbol.replace(' ', '%20')}")
+        tick = datafeed._call("GET", f"/tick/{urllib.parse.quote(self.symbol, safe="")}")
         rule = self.strategy.exit_rule if self.strategy else None
         return {
             "symbol": self.symbol,

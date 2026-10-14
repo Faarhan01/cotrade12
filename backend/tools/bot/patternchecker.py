@@ -132,8 +132,12 @@ def analyse_follow_through(bars, matches, horizon: int = 5,
     # bar at all. Any pattern that cannot beat this has found nothing.
     baseline_moves = [forward_returns(bars, i, horizons=(horizon,))
                       for i in range(len(bars) - horizon)]
-    baseline = (sum(m[horizon] for m in baseline_moves if horizon in m)
-                / len(baseline_moves)) if baseline_moves else 0.0
+    usable_baseline = [m[horizon] for m in baseline_moves if horizon in m]
+    # The numerator only counts bars where the horizon was reachable, so the
+    # denominator must count the same set. Dividing by every candidate index
+    # biased the baseline - and therefore every verdict measured against it -
+    # whenever a bar ran past the end of the data.
+    baseline = (sum(usable_baseline) / len(usable_baseline)) if usable_baseline else 0.0
 
     tested = len(stats)
     threshold = bonferroni_threshold(family_alpha, tested) if tested > 1 else SIGNIFICANT_T
@@ -187,7 +191,7 @@ def analyse_follow_through(bars, matches, horizon: int = 5,
         # effect at all" and "an effect too small to trade" lead to opposite
         # conclusions.
         if (t_edge is not None and t_net is not None
-                and abs(t_edge) >= SIGNIFICANT_T and abs(t_net) < SIGNIFICANT_T):
+                and abs(t_edge) >= threshold and abs(t_net) < threshold):
             out[name]["cost_marginal"] = True
             out[name]["note"] = ("significant before costs, not after - the "
                                  "spread is larger than the effect")
