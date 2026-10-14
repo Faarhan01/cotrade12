@@ -216,19 +216,19 @@ def register(router, engine, base: Optional[str] = None):
                 "verdict": "the only field that decides whether anything is "
                            "worth doing; 'noise' means do not trade it",
                 "win_rate vs resolved_win_rate": "the first counts every trade, "
-                                                "the second only those that "
-                                                "reached take-profit or "
-                                                "stop-loss; they disagree "
-                                                "whenever the exit rule is loose",
+                                                 "the second only those that "
+                                                 "reached take-profit or "
+                                                 "stop-loss; they disagree "
+                                                 "whenever the exit rule is loose",
                 "split_check.consistent": "false means the profit was all in "
                                           "the first half of the sample",
                 "mean_edge_pct": "follow-through with the market's own drift "
                                  "removed - the verdict is based on this, not "
                                  "on the raw move",
                 "trade_direction": "'inverted' means the pattern reliably "
-                                   "moves the other way, which is tradeable; "
-                                   "an edge that fails to replicate across "
-                                   "symbols is noise whatever its t-statistic",
+                                    "moves the other way, which is tradeable; "
+                                    "an edge that fails to replicate across "
+                                    "symbols is noise whatever its t-statistic",
             },
         }
 
@@ -395,10 +395,7 @@ def register(router, engine, base: Optional[str] = None):
         limit = int(query.get("limit", 100))
         try:
             with Store() as store:
-                # Get hits first
                 hits = store.hits(pattern=pattern, symbol=symbol, limit=limit)
-                # For each hit, we could fetch context
-                # For now return hits with meta
                 return {"run_id": run_id, "hits": hits, "count": len(hits)}
         except Exception as e:
             return {"error": str(e)}
@@ -455,6 +452,7 @@ def register(router, engine, base: Optional[str] = None):
     def export_strategies(params, query, body):
         """Export strategies to JSON."""
         from database.store import Store
+        import json
         names = body.get("names") if body else None
         try:
             with Store() as store:
@@ -465,7 +463,16 @@ def register(router, engine, base: Optional[str] = None):
                         if s:
                             strategies.append(s.to_dict())
                 else:
-                    strategies = [s.to_dict() for s in store.list_strategies()]
+                    raw_strategies = store.list_strategies()
+                    strategies = []
+                    for s in raw_strategies:
+                        # Parse JSON fields
+                        s = dict(s)
+                        s["entry_params"] = json.loads(s.get("entry_params") or "{}")
+                        s["exit_rule"] = json.loads(s.get("exit_rule") or "{}")
+                        s["sizing"] = json.loads(s.get("sizing") or "{}")
+                        s["tags"] = json.loads(s.get("tags") or "[]")
+                        strategies.append(s)
                 return {
                     "exported_at": datetime.now().isoformat(),
                     "count": len(strategies),

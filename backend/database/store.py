@@ -114,16 +114,17 @@ class Store:
             self._conn.execute(sql, values)
             self._conn.commit()
             row = self._conn.execute(
-                "SELECT id FROM strategies WHERE name = ?", (d["name"],)
+                "SELECT id, version FROM strategies WHERE name = ?", (d["name"],)
             ).fetchone()
             strategy_id = int(row["id"]) if row else 0
+            strategy_version = int(row["version"]) if row else 1
 
             # Save version snapshot
             if strategy_id:
                 snapshot = json.dumps(d, default=str)
                 self._conn.execute(
                     "INSERT INTO strategy_versions (strategy_id, version, snapshot) VALUES (?, ?, ?)",
-                    (strategy_id, d.get("version", 1), snapshot)
+                    (strategy_id, strategy_version, snapshot)
                 )
                 self._conn.commit()
             return strategy_id
