@@ -52,7 +52,7 @@ def _resolve_base(supplied: Optional[str] = None) -> str:
 BASE = _resolve_base()
 
 _research = None
-_store_instance = None
+_load_error = None
 
 
 def _gateway_fetch(symbol: str, timeframe: str = "M1", count: int = 2000,
@@ -79,6 +79,10 @@ def _gateway_fetch(symbol: str, timeframe: str = "M1", count: int = 2000,
             with urllib.request.urlopen(req, timeout=180) as resp:
                 return json.loads(resp.read())
         except urllib.error.HTTPError as exc:
+            # Translate the upstream status rather than letting a raw urllib
+            # string escape. Without this an unknown symbol - a client
+            # mistake - surfaces as a 500, telling the caller the server is
+            # broken when it is not.
             try:
                 detail = json.loads(exc.read()).get("error", "")
             except Exception:                           # noqa: BLE001
@@ -100,24 +104,7 @@ def _gateway_fetch(symbol: str, timeframe: str = "M1", count: int = 2000,
                 f"&from={start.date().isoformat()}&to={end.date().isoformat()}")
     else:
         path = f"/candles/{q}?timeframe={timeframe}&count={count}"
-
-    try:
-        raw_candles = call(path).get("candles", [])
-        if raw_candles and _store_instance:
-            try:
-                _store_instance.save_bars(symbol, timeframe, raw_candles)
-            except Exception:
-                pass
-        return to_bars(raw_candles)
-    except Exception as exc:
-        if _store_instance:
-            try:
-                cached = _store_instance.load_bars(symbol, timeframe, limit=count)
-                if cached:
-                    return to_bars(cached)
-            except Exception:
-                pass
-        raise
+    return to_bars(call(path).get("candles", []))
 
 
 def get_research():
@@ -127,7 +114,7 @@ def get_research():
     Returns None when the knowledgebase is not installed; callers then skip
     registering these routes instead of failing at import time.
     """
-    global _research, _load_error, _store_instance
+    global _research, _load_error
     if _research is not None:
         return _research
     if _load_error is not None:
@@ -139,7 +126,6 @@ def get_research():
             database = importlib.import_module("database")
             store = database.Store()
             store.migrate()
-            _store_instance = store
         except Exception as exc:                      # noqa: BLE001
             # A missing or unwritable database is not fatal; research still
             # works, results just do not persist between restarts.
@@ -315,11 +301,8 @@ def register(router, engine, base: Optional[str] = None):
             specs = research.library()
         if not isinstance(specs, list):
             raise BadRequest("'strategies' must be a list")
-        symbol = body.get("symbol")
-        if not symbol:
-            raise BadRequest("'symbol' is required")
         return research.sweep(
-            specs, symbol,
+            specs, body.get("symbol") or "EURUSD",
             timeframe=body.get("timeframe", "M1"),
             count=int(body.get("count", 4000)),
         )
