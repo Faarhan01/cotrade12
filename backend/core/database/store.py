@@ -18,12 +18,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Optional
 
-from database.schema import SCHEMA, REPORT_FIELDS, STRATEGY_FIELDS
+from core.database.schema import SCHEMA, REPORT_FIELDS, STRATEGY_FIELDS
 
+_BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_PATH = os.environ.get(
     "PERON_DB",
-    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                 "data", "peron.db"),
+    os.path.join(_BACKEND_ROOT, "db", "data", "peron.db"),
 )
 
 

@@ -152,7 +152,7 @@
 
     var titleHtml = options.title
       ? '<h2 style="margin:0 0 1rem;font-size:1.1rem;font-weight:600;">' + utils.escapeHtml(options.title) + '</h2>'
-      : "";
+  : "";
 
     var contentHtml = typeof options.content === "string"
       ? options.content
@@ -168,7 +168,7 @@
             utils.escapeHtml(btn.text) + '</button>';
         }).join("") +
         '</div>';
-      : "";
+    }
 
     modalEl.innerHTML = titleHtml +
       '<div style="margin-bottom:1rem;color:var(--text);line-height:1.6;">' + contentHtml + '</div>' +
@@ -310,7 +310,7 @@
           resolve(!!result);
         },
       });
-    };
+    });
   }
 
   // ── Empty State Helper ───────────────────────────────────────────────

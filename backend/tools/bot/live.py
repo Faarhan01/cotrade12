@@ -57,7 +57,7 @@ class LiveTrader:
     def _create_bot_session(self):
         """Create a bot session in the database."""
         try:
-            from database.store import Store
+            from core.database.store import Store
             with Store() as store:
                 if not self.session_id:
                     self.session_id = f"bot_{datetime.now().strftime('%Y%m%dT%H%M%S')}"
@@ -79,7 +79,7 @@ class LiveTrader:
         if not self.session_id:
             return
         try:
-            from database.store import Store
+            from core.database.store import Store
             with Store() as store:
                 store.log_bot_action(
                     session_id=self.session_id,
@@ -100,7 +100,7 @@ class LiveTrader:
         if not self.session_id:
             return
         try:
-            from database.store import Store
+            from core.database.store import Store
             with Store() as store:
                 store.update_bot_session(
                     self.session_id,

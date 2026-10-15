@@ -12,7 +12,7 @@ expected, because the caller is usually an agent acting on the text.
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from server.errors import BadRequest
+from core.server.errors import BadRequest
 from cony import enums
 
 MAX_CANDLES = 10000

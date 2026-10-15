@@ -86,6 +86,10 @@ class MT5Engine:
     def ensure_connected(self):
         self._conn.ensure_connected()
 
+    def connection_info(self) -> dict:
+        """Terminal connection details, without reaching into the manager."""
+        return self._conn.get_connection_info()
+
     def package_version(self) -> Optional[str]:
         """Version of the loaded MetaTrader5 package."""
         module = enums.load()

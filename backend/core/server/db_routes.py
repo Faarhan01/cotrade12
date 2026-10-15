@@ -14,7 +14,7 @@ logger = logging.getLogger("cony.server.db")
 def register(router) -> int:
     """Register database inspection routes onto the router."""
     try:
-        from database.store import Store
+        from core.database.store import Store
     except ImportError:
         logger.warning("database package not importable; skipping /database endpoints")
         return 0

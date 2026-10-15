@@ -377,7 +377,7 @@ def check_and_store(symbol: str, timeframe: str = "M1", count: int = 3000,
     Also saves indicator values at each pattern hit (hit_context table)
     for deeper analysis of why patterns worked or failed.
     """
-    from database.store import new_run_id
+    from core.database.store import new_run_id
     from knowledgebase import indicators as ind
     from knowledgebase.patterns import Bar
     
@@ -387,7 +387,7 @@ def check_and_store(symbol: str, timeframe: str = "M1", count: int = 3000,
     report = CheckReport(symbol, timeframe, bars, matches, inst)
 
     if store is None:
-        from database import Store
+        from core.database import Store
         store = Store()
         store.migrate()
 
@@ -482,7 +482,7 @@ def main(argv=None):
 
     store = None
     if args.save:
-        from database import Store
+        from core.database import Store
         store = Store()
         store.migrate()
 
@@ -492,7 +492,7 @@ def main(argv=None):
           else report.summary())
 
     if args.save:
-        from database.store import new_run_id
+        from core.database.store import new_run_id
         payload = [{"pattern": m.pattern, "index": m.index,
                     "time": report.bars[m.index].time, "direction": m.direction,
                     "strength": m.strength, "price": report.bars[m.index].close,

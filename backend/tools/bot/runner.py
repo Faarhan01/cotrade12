@@ -23,8 +23,8 @@ from typing import Dict, List, Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))))
 
-from database import Store                                  # noqa: E402
-from database.store import new_run_id                       # noqa: E402
+from core.database import Store                                  # noqa: E402
+from core.database.store import new_run_id                       # noqa: E402
 from knowledgebase import indicators as kind                # noqa: E402
 from knowledgebase import patterns as kpatterns             # noqa: E402
 from knowledgebase import strategies as kstrategies         # noqa: E402

@@ -37,10 +37,10 @@ from cony.mt5_engine import (
     OrderRejectedError,
     SymbolNotFoundError,
 )
-from server import Router, RouteHandlers
-from server.errors import BadRequest, HTTPError
-from server.responses import RawResponse
-from server.streaming import (
+from core.server import Router, RouteHandlers
+from core.server.errors import BadRequest, HTTPError
+from core.server.responses import RawResponse
+from core.server.streaming import (
     EventStream,
     marketbook_producer,
     portfolio_producer,
@@ -422,8 +422,16 @@ class Gateway:
     def __init__(self):
         self.engine = self.build_engine()
         self.router = Router()
+        # Stage 5: single composition root.
+        try:
+            from core.composition import build_container
+            self.container = build_container(config, self.engine)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("container not available: %s", exc)
+            self.container = None
         RouteHandlers(self.engine, self.router,
-                          base=f"http://{config.host}:{config.port}")
+                          base=f"http://{config.host}:{config.port}",
+                          container=getattr(self, "container", None))
         self.server = GatewayServer((config.host, config.port), GatewayHandler, self)
 
         # Market book subscriptions die with the connection; mirror that here

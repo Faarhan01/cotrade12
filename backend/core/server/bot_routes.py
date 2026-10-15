@@ -36,7 +36,7 @@ def register(router, engine=None) -> int:
 
         stored = []
         try:
-            from database.store import Store
+            from core.database.store import Store
             with Store() as store:
                 stored = [s["name"] for s in store.list_strategies()]
         except Exception:
@@ -54,7 +54,7 @@ def register(router, engine=None) -> int:
     def create_bot_session(params, query, body):
         """Create a new bot trading session."""
         body = body or {}
-        from database.store import Store
+        from core.database.store import Store
         try:
             with Store() as store:
                 session_id = body.get("session_id") or f"bot_{datetime.now().strftime('%Y%m%dT%H%M%S')}"
@@ -88,7 +88,7 @@ def register(router, engine=None) -> int:
     @router.get("/bot/sessions")
     def list_bot_sessions(params, query, body):
         """List all bot sessions."""
-        from database.store import Store
+        from core.database.store import Store
         try:
             with Store() as store:
                 limit = int(query.get("limit", 50))
@@ -101,25 +101,29 @@ def register(router, engine=None) -> int:
     def get_bot_session(params, query, body):
         """Get details of a specific bot session including logs."""
         session_id = params["session_id"]
-        from database.store import Store
+        from core.database.store import Store
         try:
             with Store() as store:
                 sessions = store.list_bot_sessions(limit=1000)
                 session = next((s for s in sessions if s.get("session_id") == session_id), None)
                 if not session:
-                    return {"error": "Session not found"}, 404
+                    from core.server.errors import NotFound
+                    raise NotFound("Session not found")
 
                 logs = store.list_bot_logs(session_id=session_id, limit=200)
                 return {"session": session, "logs": logs}
         except Exception as e:
-            return {"error": str(e)}, 500
+            from core.server.errors import HTTPError, BadRequest
+            if isinstance(e, HTTPError):
+                raise
+            raise BadRequest(str(e))
 
     @router.post("/bot/sessions/{session_id}/stop")
     def stop_bot_session(params, query, body):
         """Stop a running bot session."""
         session_id = params["session_id"]
         body = body or {}
-        from database.store import Store
+        from core.database.store import Store
         try:
             with Store() as store:
                 trades_count = int(body.get("trades_count", 0))
@@ -140,7 +144,7 @@ def register(router, engine=None) -> int:
         """Get execution logs for a bot session."""
         session_id = params["session_id"]
         limit = int(query.get("limit", 200))
-        from database.store import Store
+        from core.database.store import Store
         try:
             with Store() as store:
                 logs = store.list_bot_logs(session_id=session_id, limit=limit)
@@ -153,7 +157,7 @@ def register(router, engine=None) -> int:
         """Record a bot action (order, evaluation, etc.)"""
         session_id = params["session_id"]
         body = body or {}
-        from database.store import Store
+        from core.database.store import Store
         try:
             with Store() as store:
                 log_id = store.log_bot_action(
@@ -175,7 +179,7 @@ def register(router, engine=None) -> int:
         """Update session performance metrics."""
         session_id = params["session_id"]
         body = body or {}
-        from database.store import Store
+        from core.database.store import Store
         try:
             with Store() as store:
                 trades_count = int(body.get("trades_count", 0))

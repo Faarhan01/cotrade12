@@ -65,7 +65,7 @@ def cmd_server(args):
 
 def cmd_db(args):
     """Inspect the SQLite database stats and verify integrity."""
-    from database.store import Store
+    from core.database.store import Store
     with Store() as store:
         print("Database stats:")
         for k, v in store.stats().items():
@@ -85,7 +85,7 @@ def cmd_routes(args):
     """Print all configured endpoints and UI routes."""
     from cony import MT5Engine, ConnectionManager
     from deamon.config import config
-    from server import Router, RouteHandlers
+    from core.server import Router, RouteHandlers
 
     conn = ConnectionManager({"package_path": config.mt5_package_path})
     engine = MT5Engine(conn)

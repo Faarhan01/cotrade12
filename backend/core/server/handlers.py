@@ -14,9 +14,9 @@ import math
 import os
 import traceback
 
-from server import validation as v
-from server.errors import BadRequest, UpstreamUnavailable, NotFound
-from server.routes import Router
+from core.server import validation as v
+from core.server.errors import BadRequest, UpstreamUnavailable, NotFound
+from core.server.routes import Router
 from cony import enums
 from cony.mt5_engine import MT5Engine
 
@@ -34,13 +34,11 @@ class RouteHandlers:
     """Registers every API route against a router."""
 
     def __init__(self, engine: MT5Engine, router: Router,
-                 base: str = "http://127.0.0.1:8890"):
-        # Where this gateway is listening. Passed in rather than imported
-        # because `server/` must not reach up into `deamon/`; the caller owns
-        # the configuration and hands it down.
+                 base: str = "http://127.0.0.1:8890", container=None):
         self.base = base
         self.engine = engine
         self.router = router
+        self.container = container
         self.setup_routes()
 
     def setup_routes(self):
@@ -56,7 +54,7 @@ class RouteHandlers:
                 "status": "ok",
                 "service": "cony-gateway",
                 "mt5_connected": engine.is_connected,
-                "connection": engine._conn.get_connection_info(),
+                "connection": engine.connection_info(),
             }
             if engine.is_connected:
                 # MT5 reports broker server time, so publish the offset rather
@@ -742,76 +740,12 @@ class RouteHandlers:
         def book_subscribed(params, query, body):
             return {"subscribed": engine.market_book.subscribed}
 
-        # ─── Research (optional extension) ─────────────────────────────
-        # Registers the strategy/pattern/backtest surface when the
-        # knowledgebase is importable alongside the gateway. Absent in a
-        # standalone deployment, which stays a pure MetaTrader 5 gateway.
+        # ─── Optional extensions (Stage 6: single plugin entrypoint) ──
         try:
-            from server import research as _research_routes
-
-            added = _research_routes.register(r, engine, base=self.base)
-            if added:
-                logger.info("research API enabled: %d routes under /research", added)
-            else:
-                # Report the underlying import error rather than leaving the
-                # caller to infer it from unexplained 404s later.
-                logger.warning(
-                    "research API unavailable (%s) - the knowledgebase is not "
-                    "importable from this gateway; market data endpoints are "
-                    "unaffected.",
-                    _research_routes.load_error() or "no routes registered")
-        except Exception:                              # noqa: BLE001
-            # The stack, not just the message: an extension that fails to
-            # load is otherwise indistinguishable from one that was never
-            # installed. Formatted before the log call so no newline escapes
-            # into the message prefix.
-            logger.warning("research API failed to load. Traceback follows.")
-            logger.warning("%s", traceback.format_exc())
-
-        # ─── Database & Bot APIs (modular extensions) ─────────────────
-        try:
-            from server import db_routes as _db_routes
-            n_db = _db_routes.register(r)
-            if n_db:
-                logger.info("database API enabled: %d routes under /db", n_db)
-        except Exception:                              # noqa: BLE001
-            logger.debug("database API not registered: %s", traceback.format_exc())
-
-        try:
-            from server import bot_routes as _bot_routes
-            n_bot = _bot_routes.register(r, engine=engine)
-            if n_bot:
-                logger.info("bot API enabled: %d routes under /bot", n_bot)
-        except Exception:                              # noqa: BLE001
-            logger.debug("bot API not registered: %s", traceback.format_exc())
-
-        # ─── Dashboard (optional extension) ─────────────────────────────
-        # The web control panel at GET /. Same contract as the research API:
-        # absent means the dashboard could not load, and the reason is logged.
-        # Named `dashboard`, not `site` - `site` is a stdlib module frozen
-        # into the interpreter and already in sys.modules at startup, so a
-        # package called `site` is unreachable however the path is arranged.
-        # The expected location is named up front so a failure says where the
-        # frontend should be, not merely that something would not import.
-        _workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        _frontend_hint = os.environ.get("CONY_FRONTEND_DIR") or os.path.join(_workspace_root, "frontend")
-        try:
-            from frontconnect import register as _dashboard_routes
-
-            added = _dashboard_routes(r, engine)
-            if added:
-                from frontconnect import assets as _assets
-                logger.info("dashboard enabled: / and /ui/{page} from %s "
-                            "(pages: %s)", _assets.FRONTEND_DIR,
-                            ", ".join(_assets.available_pages()) or "none")
-            else:
-                logger.warning(
-                    "dashboard unavailable - no pages found under %s. Set "
-                    "CONY_FRONTEND_DIR to point elsewhere.", _frontend_hint)
-        except Exception:                              # noqa: BLE001
-            logger.warning("dashboard failed to load (frontend expected at %s). "
-                           "Traceback follows.", _frontend_hint)
-            logger.warning("%s", traceback.format_exc())
+            from core import plugins as _plugins
+            _plugins.register_all(r, engine, base=self.base, container=getattr(self, "container", None))
+        except Exception:  # noqa: BLE001
+            logger.warning("extension loading raised: %s", traceback.format_exc())
 
         @r.get("/marketbook")
         def marketbooks(params, query, body):

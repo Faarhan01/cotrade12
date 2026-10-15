@@ -34,7 +34,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
-from frontconnect import assets
+from core.frontconnect import assets
 
 # How many Market Watch instruments to show. The broker exposes 731 symbols
 # but only a few dozen are flagged visible/selected; the rest are noise here.

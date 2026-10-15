@@ -28,10 +28,10 @@ should not know what a web page is. This is one optional extension among
 others; a stripped-down gateway serves JSON and nothing else.
 """
 
-from server import responses
-from server.errors import NotFound
+from core.server import responses
+from core.server.errors import NotFound
 
-from frontconnect import assets, views
+from core.frontconnect import assets, views
 
 # What each page needs from the server.
 #

@@ -20,9 +20,9 @@ for _d in (_backend_dir, _gateway_dir):
     if _d not in sys.path:
         sys.path.insert(0, _d)
 
-from server.routes import Router
-from server.handlers import RouteHandlers
-from server.errors import (
+from core.server.routes import Router
+from core.server.handlers import RouteHandlers
+from core.server.errors import (
     HTTPError,
     BadRequest,
     NotFound,

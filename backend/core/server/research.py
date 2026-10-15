@@ -24,7 +24,7 @@ import urllib.parse
 from datetime import datetime
 from typing import Optional
 
-from server.errors import BadRequest, NotFound, UpstreamUnavailable
+from core.server.errors import BadRequest, NotFound, UpstreamUnavailable
 
 # The gateway lives at backend/gateway; its siblings (knowledgebase, tools)
 # are one level up. Added so the extension can find them without the caller
@@ -362,7 +362,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/patterns/frequency")
     def pattern_frequency(params, query, body):
         """Get pattern frequency statistics."""
-        from database.store import Store
+        from core.database.store import Store
         symbol = query.get("symbol")
         try:
             with Store() as store:
@@ -374,7 +374,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/bars/range")
     def bar_range(params, query, body):
         """Get cached bar range for a symbol/timeframe."""
-        from database.store import Store
+        from core.database.store import Store
         symbol = query.get("symbol")
         timeframe = query.get("timeframe", "M1")
         try:
@@ -387,7 +387,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/reports/best")
     def best_reports(params, query, body):
         """Get best reports ranked by t-statistic."""
-        from database.store import Store
+        from core.database.store import Store
         limit = int(query.get("limit", 20))
         try:
             with Store() as store:
@@ -399,7 +399,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/hits/context")
     def hit_context(params, query, body):
         """Get indicator context at pattern hits."""
-        from database.store import Store
+        from core.database.store import Store
         run_id = query.get("run_id")
         symbol = query.get("symbol")
         pattern = query.get("pattern")
@@ -416,7 +416,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/strategy/{name}/history")
     def strategy_history(params, query, body):
         """Get all versions of a strategy."""
-        from database.store import Store
+        from core.database.store import Store
         name = params["name"]
         try:
             with Store() as store:
@@ -428,7 +428,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/strategy/{name}/version/{version}")
     def strategy_version(params, query, body):
         """Get a specific version of a strategy."""
-        from database.store import Store
+        from core.database.store import Store
         name = params["name"]
         version = int(params["version"])
         try:
@@ -445,7 +445,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.post("/research/strategy/{name}/clone")
     def clone_strategy(params, query, body):
         """Clone a strategy with a new name."""
-        from database.store import Store
+        from core.database.store import Store
         name = params["name"]
         body = body or {}
         new_name = body.get("new_name")
@@ -462,7 +462,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.post("/research/strategy/export")
     def export_strategies(params, query, body):
         """Export strategies to JSON."""
-        from database.store import Store
+        from core.database.store import Store
         import json
         names = body.get("names") if body else None
         try:
@@ -495,7 +495,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.post("/research/strategy/import")
     def import_strategies(params, query, body):
         """Import strategies from JSON."""
-        from database.store import Store
+        from core.database.store import Store
         from knowledgebase.strategies import Strategy
         strategies_data = body.get("strategies") if body else None
         if not strategies_data:
@@ -518,7 +518,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/reports/{run_id}")
     def get_report(params, query, body):
         """Get a single backtest report by run_id."""
-        from database.store import Store
+        from core.database.store import Store
         run_id = params["run_id"]
         try:
             with Store() as store:
@@ -536,7 +536,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.delete("/research/strategy/{name}")
     def delete_strategy(params, query, body):
         """Delete a stored strategy."""
-        from database.store import Store
+        from core.database.store import Store
         name = params["name"]
         try:
             with Store() as store:
@@ -552,7 +552,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/strategy/{name}/performance")
     def strategy_performance(params, query, body):
         """Get performance history for a strategy across all reports."""
-        from database.store import Store
+        from core.database.store import Store
         name = params["name"]
         limit = int(query.get("limit", 50))
         try:
@@ -582,7 +582,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/patterns/cooccurrence")
     def pattern_cooccurrence(params, query, body):
         """Get pattern co-occurrence analysis."""
-        from database.store import Store
+        from core.database.store import Store
         symbol = query.get("symbol")
         timeframe = query.get("timeframe", "M1")
         limit = int(query.get("limit", 1000))
