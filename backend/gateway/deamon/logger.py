@@ -12,7 +12,7 @@ import sys
 _configured = False
 
 
-def setup_logging(level: str = "INFO", log_file: str = None) -> None:
+def setup_logging(level: str = "INFO", log_file: str = None, json: bool = False) -> None:
     """Configure root logging once per process."""
     global _configured
     if _configured:
@@ -20,11 +20,15 @@ def setup_logging(level: str = "INFO", log_file: str = None) -> None:
 
     root = logging.getLogger()
     root.setLevel(getattr(logging, level.upper(), logging.INFO))
+    if json:
+        formatter = logging.Formatter('{"time":"%(asctime)s","level":"%(levelname)s","logger":"%(name)s","message":"%(message)s"}')
+    else:
+        formatter = logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            datefmt="%H:%M:%S",
+        )
 
-    formatter = logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%H:%M:%S",
-    )
+
 
     console = logging.StreamHandler(sys.stdout)
     console.setLevel(logging.DEBUG)

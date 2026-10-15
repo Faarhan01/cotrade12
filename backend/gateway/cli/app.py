@@ -6,9 +6,10 @@ import argparse
 import os
 import sys
 
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_BACKEND = _ROOT
-_GATEWAY = os.path.join(_BACKEND, "gateway")
+_BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_ROOT = _BACKEND_ROOT
+_BACKEND = _BACKEND_ROOT
+_GATEWAY = os.path.join(_BACKEND_ROOT, "gateway")
 
 for _directory in (_ROOT, _BACKEND, _GATEWAY):
     if _directory not in sys.path:

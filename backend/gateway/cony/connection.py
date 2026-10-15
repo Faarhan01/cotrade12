@@ -10,7 +10,6 @@ place.
 """
 
 import threading
-import time
 from typing import Optional
 
 from cony import enums
@@ -61,7 +60,7 @@ class ConnectionManager:
             import MetaTrader5 as mt5
         except ImportError as exc:
             hint = (
-                f"Set PERON_PACKAGE_PATH to the directory containing "
+                f"Set CONY_MT5_PACKAGE (or PERON_PACKAGE_PATH) to the directory containing "
                 f"MetaTrader5/. Searched: {resolved or 'site-packages only'}. "
                 f"The package must match this interpreter "
                 f"(cp{__import__('sys').version_info.major}"

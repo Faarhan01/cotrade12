@@ -16,6 +16,7 @@
   window.fmt = window.fmt || window.fmtLib || window.fmt;
   window.shell.start(boot);
   var lastScanSymbol = boot.default_symbol || "";
+  var lastScanTimeframe = "M15";
 
   function status(node, text, kind) {
     var el = document.querySelector('[data-role="' + node + '"]');
@@ -134,6 +135,7 @@
         count: Number(scanForm.elements.count.value) || 2000
       };
       lastScanSymbol = scanSymbol || lastScanSymbol;
+      lastScanTimeframe = payload.timeframe || lastScanTimeframe;
       if (button) button.classList.add("spinning");
       status("scan-status", "scanning " + payload.symbol + "…", "busy");
 
@@ -213,7 +215,7 @@
       var isString = typeof payload === "string";
 
       api.post("/research/strategy/validate",
-               isString ? { name: payload } : payload)
+               isString ? { strategy_name: payload } : payload)
         .then(function (result) {
           status("strategy-status", "");
           if (!result.valid) { showError(result); return; }
@@ -227,7 +229,7 @@
           return api.post("/research/backtest", {
             strategy: isString ? payload : result.strategy,
             symbol: btSymbol,
-            timeframe: "M15",
+            timeframe: lastScanTimeframe,
             count: 2000
           });
         })

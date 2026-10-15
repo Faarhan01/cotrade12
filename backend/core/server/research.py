@@ -17,21 +17,13 @@ knows HTTP exists.
 
 import importlib
 import json
-import os
+from core.config import gateway_url
 import sys
-import urllib.error
-import urllib.parse
 from datetime import datetime
 from typing import Optional
+from urllib.error import HTTPError, URLError
 
 from core.server.errors import BadRequest, NotFound, UpstreamUnavailable
-
-# The gateway lives at backend/gateway; its siblings (knowledgebase, tools)
-# are one level up. Added so the extension can find them without the caller
-# having to arrange PYTHONPATH.
-_BACKEND = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _BACKEND not in sys.path:
-    sys.path.insert(0, _BACKEND)
 
 # Where this gateway is listening. Supplied by `deamon` when it registers the
 # research routes, because that layer owns the configuration and `server/`
@@ -46,7 +38,7 @@ if _BACKEND not in sys.path:
 # CONY_URL still wins, so the research layer can be pointed at a remote
 # gateway instead of the local one.
 def _resolve_base(supplied: Optional[str] = None) -> str:
-    base = os.environ.get("CONY_URL") or supplied or "http://127.0.0.1:8890"
+    base = gateway_url(supplied)
     return base.rstrip("/")
 
 
@@ -66,7 +58,6 @@ def _gateway_fetch(symbol: str, timeframe: str = "M1", count: int = 2000,
     indicator downstream reads attributes, so handing back raw dicts fails
     deep inside the analysis instead of at the boundary.
     """
-    import urllib.error
     import urllib.request
 
     from knowledgebase.patterns import to_bars
@@ -79,7 +70,7 @@ def _gateway_fetch(symbol: str, timeframe: str = "M1", count: int = 2000,
         try:
             with urllib.request.urlopen(req, timeout=180) as resp:
                 return json.loads(resp.read())
-        except urllib.error.HTTPError as exc:
+        except HTTPError as exc:
             # Translate the upstream status rather than letting a raw urllib
             # string escape. Without this an unknown symbol - a client
             # mistake - surfaces as a 500, telling the caller the server is
@@ -97,12 +88,13 @@ def _gateway_fetch(symbol: str, timeframe: str = "M1", count: int = 2000,
             if exc.code == 400 and "MetaTrader5" in detail:
                 raise UpstreamUnavailable(f"MT5 not connected: {detail}") from exc
             raise BadRequest(detail or f"Upstream returned {exc.code}") from exc
-        except urllib.error.URLError as exc:
+        except URLError as exc:
             raise UpstreamUnavailable(
                 f"Gateway at {BASE} is unreachable: {exc.reason}") from exc
 
     # safe="" so a symbol containing a slash cannot escape its path segment.
-    q = urllib.parse.quote(symbol, safe="")
+    from urllib.parse import quote as _quote
+    q = _quote(symbol, safe="")
     if days:
         from datetime import datetime, timedelta, timezone
         end = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -130,7 +122,7 @@ def get_research():
         api = importlib.import_module("knowledgebase.api")
         store = None
         try:
-            database = importlib.import_module("core.database")
+            database = importlib.import_module("database")
             store = database.Store()
             store.migrate()
         except Exception as exc:                      # noqa: BLE001
@@ -362,7 +354,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/patterns/frequency")
     def pattern_frequency(params, query, body):
         """Get pattern frequency statistics."""
-        from core.database.store import Store
+        from database.store import Store
         symbol = query.get("symbol")
         try:
             with Store() as store:
@@ -374,7 +366,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/bars/range")
     def bar_range(params, query, body):
         """Get cached bar range for a symbol/timeframe."""
-        from core.database.store import Store
+        from database.store import Store
         symbol = query.get("symbol")
         timeframe = query.get("timeframe", "M1")
         try:
@@ -387,7 +379,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/reports/best")
     def best_reports(params, query, body):
         """Get best reports ranked by t-statistic."""
-        from core.database.store import Store
+        from database.store import Store
         limit = int(query.get("limit", 20))
         try:
             with Store() as store:
@@ -399,7 +391,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/hits/context")
     def hit_context(params, query, body):
         """Get indicator context at pattern hits."""
-        from core.database.store import Store
+        from database.store import Store
         run_id = query.get("run_id")
         symbol = query.get("symbol")
         pattern = query.get("pattern")
@@ -413,10 +405,27 @@ def register(router, engine, base: Optional[str] = None):
 
     # ── Strategy Versioning & Export/Import ──────────────────────────────
 
+    @router.get("/research/strategy/{name}/compare")
+    def strategy_compare(params, query, body):
+        """Compare a stored strategy's current and historical snapshots."""
+        from database.store import Store
+        name = params["name"]
+        try:
+            with Store() as store:
+                current = store.load_strategy(name)
+                history = store.get_strategy_history(name)
+                return {
+                    "name": name,
+                    "current": current.to_dict() if current else None,
+                    "versions": history,
+                }
+        except Exception as e:
+            return {"error": str(e)}
+
     @router.get("/research/strategy/{name}/history")
     def strategy_history(params, query, body):
         """Get all versions of a strategy."""
-        from core.database.store import Store
+        from database.store import Store
         name = params["name"]
         try:
             with Store() as store:
@@ -428,7 +437,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/strategy/{name}/version/{version}")
     def strategy_version(params, query, body):
         """Get a specific version of a strategy."""
-        from core.database.store import Store
+        from database.store import Store
         name = params["name"]
         version = int(params["version"])
         try:
@@ -445,7 +454,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.post("/research/strategy/{name}/clone")
     def clone_strategy(params, query, body):
         """Clone a strategy with a new name."""
-        from core.database.store import Store
+        from database.store import Store
         name = params["name"]
         body = body or {}
         new_name = body.get("new_name")
@@ -462,7 +471,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.post("/research/strategy/export")
     def export_strategies(params, query, body):
         """Export strategies to JSON."""
-        from core.database.store import Store
+        from database.store import Store
         import json
         names = body.get("names") if body else None
         try:
@@ -495,7 +504,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.post("/research/strategy/import")
     def import_strategies(params, query, body):
         """Import strategies from JSON."""
-        from core.database.store import Store
+        from database.store import Store
         from knowledgebase.strategies import Strategy
         strategies_data = body.get("strategies") if body else None
         if not strategies_data:
@@ -518,7 +527,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/reports/{run_id}")
     def get_report(params, query, body):
         """Get a single backtest report by run_id."""
-        from core.database.store import Store
+        from database.store import Store
         run_id = params["run_id"]
         try:
             with Store() as store:
@@ -536,7 +545,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.delete("/research/strategy/{name}")
     def delete_strategy(params, query, body):
         """Delete a stored strategy."""
-        from core.database.store import Store
+        from database.store import Store
         name = params["name"]
         try:
             with Store() as store:
@@ -552,7 +561,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/strategy/{name}/performance")
     def strategy_performance(params, query, body):
         """Get performance history for a strategy across all reports."""
-        from core.database.store import Store
+        from database.store import Store
         name = params["name"]
         limit = int(query.get("limit", 50))
         try:
@@ -582,7 +591,7 @@ def register(router, engine, base: Optional[str] = None):
     @router.get("/research/patterns/cooccurrence")
     def pattern_cooccurrence(params, query, body):
         """Get pattern co-occurrence analysis."""
-        from core.database.store import Store
+        from database.store import Store
         symbol = query.get("symbol")
         timeframe = query.get("timeframe", "M1")
         limit = int(query.get("limit", 1000))
@@ -633,8 +642,6 @@ def register(router, engine, base: Optional[str] = None):
             stored = research.get_strategy(name)
             if not stored:
                 raise NotFound(f"No stored strategy named '{name}'")
-            base_plan = kstrategies.Strategy.from_dict(stored)
-
             # Generate parameter combinations
             import itertools
             param_names = list(param_grid.keys())

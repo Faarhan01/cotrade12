@@ -76,5 +76,23 @@
     return source;
   }
 
-  global.api = { request: request, get: get, post: post, stream: stream };
+  var API = {
+    health: "/health",
+    metrics: "/metrics",
+    candles: function (symbol) { return "/candles/" + encodeURIComponent(symbol); },
+    symbol: function (symbol) { return "/symbol/" + encodeURIComponent(symbol); },
+    symbols: "/symbols",
+    symbolsSearch: "/symbols/search",
+    positions: "/positions",
+    account: "/account",
+    dbStats: "/db/stats",
+    dbReports: "/db/reports",
+    researchBacktest: "/research/backtest",
+    storedStrategies: "/research/stored",
+    library: "/research/library",
+  };
+
+  // Keep ownership of `global.API` in utils.js, which already publishes the
+  // broader endpoint/map; expose endpoints here without clobbering it.
+  global.api = { request: request, get: get, post: post, stream: stream, endpoints: API };
 })(window);

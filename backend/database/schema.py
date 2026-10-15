@@ -34,7 +34,8 @@ SCHEMA: List[str] = [
         enabled       INTEGER NOT NULL DEFAULT 1,
         version       INTEGER NOT NULL DEFAULT 1,
         created       TEXT    NOT NULL DEFAULT (datetime('now')),
-        updated       TEXT    NOT NULL DEFAULT (datetime('now'))
+        updated       TEXT    NOT NULL DEFAULT (datetime('now')),
+        deleted_at    TEXT
     )
     """,
 

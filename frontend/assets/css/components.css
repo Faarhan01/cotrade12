@@ -218,3 +218,24 @@ td.ask { color: var(--muted); }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: var(--fs-md); }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; font-family: var(--mono); }
+/* ── Search / status helpers shared by pages ─────────────────────── */
+
+.search-pad { padding: 14px 15px; }
+.search-status { margin-top: 8px; font-size: var(--fs-sm); }
+.search-status.busy { color: var(--accent); }
+.search-status.error { color: var(--neg); }
+.search-status.ok { color: var(--pos); }
+
+.btn.tiny {
+  font-size: var(--fs-xs);
+  padding: 3px 8px;
+}
+
+.tag.muted {
+  color: var(--muted);
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+/* Keyboard scroll support for horizontally scrollable panels */
+.panel-body[tabindex="0"]:focus-visible { outline: 1px solid var(--accent); }

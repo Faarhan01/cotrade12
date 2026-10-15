@@ -23,17 +23,14 @@ Two details that are easy to get wrong and are handled here once:
 
 import mimetypes
 import os
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 # frontend/ sits next to backend/, so it is two levels above this package.
 # Overridable so a deployment can point at a built or vendored copy.
-FRONTEND_DIR = os.environ.get(
-    "CONY_FRONTEND_DIR",
-    os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
-        "frontend",
-    ),
-)
+from core.config import GatewayConfig
+
+_repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+FRONTEND_DIR = GatewayConfig.from_env().frontend_dir or os.path.join(_repo_root, "frontend")
 
 ASSETS_DIR = os.path.join(FRONTEND_DIR, "assets")
 PAGES_DIR = os.path.join(FRONTEND_DIR, "pages")

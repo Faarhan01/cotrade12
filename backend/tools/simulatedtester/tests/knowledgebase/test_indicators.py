@@ -1,6 +1,5 @@
 import os, sys
-repo = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-backend = os.path.join(repo, "backend")
+backend = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 if backend not in sys.path:
     sys.path.insert(0, backend)
 
@@ -34,3 +33,9 @@ def test_atr_wilder_smoothing():
     assert out[-1] >= out[2]
     # Length preserved.
     assert len(out) == 20
+
+
+def test_route_count_and_repo_constructors():
+    from database.repositories import SqliteStrategyRepository, SqliteReportRepository
+    # constructors accept config optionally
+    assert SqliteStrategyRepository() and SqliteReportRepository(None)

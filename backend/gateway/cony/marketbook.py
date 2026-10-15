@@ -45,7 +45,7 @@ class MarketBook:
                 return False
             # Resolve the broker's spelling first, then ensure it is watched -
             # the terminal only maintains a book for symbols in MarketWatch.
-            name = self._engine._ready_symbol(symbol)
+            name = self._engine.ready_symbol(symbol)
             if not mt5.market_book_add(name):
                 code = mt5.last_error()
                 raise MarketBookError(

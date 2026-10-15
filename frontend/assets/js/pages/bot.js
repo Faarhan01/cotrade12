@@ -128,6 +128,10 @@
     const vacuumStatus = dom.$("[data-role=vacuum-status]");
     if (vacuumBtn) {
       vacuumBtn.addEventListener("click", async () => {
+        var confirmed = window.components && window.components.confirm
+          ? await window.components.confirm("This will compact the SQLite database and remove unused pages. Continue?", { title: "Vacuum database" })
+          : true;
+        if (!confirmed) return;
         vacuumBtn.disabled = true;
         if (vacuumStatus) vacuumStatus.textContent = "Vacuuming...";
         try {

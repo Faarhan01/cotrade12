@@ -36,12 +36,9 @@ def _resolve_base() -> str:
     starting the daemon on any other port produced a gateway that could not
     reach its own research layer: the listener moved and this stayed behind.
     """
-    explicit = os.environ.get("CONY_URL")
-    if explicit:
-        return explicit.rstrip("/")
-    host = os.environ.get("CONY_HOST", "127.0.0.1")
-    port = os.environ.get("CONY_PORT", "8890")
-    return f"http://{host}:{port}".rstrip("/")
+    from core.config import gateway_url
+
+    return gateway_url().rstrip("/")
 
 
 BASE = _resolve_base()

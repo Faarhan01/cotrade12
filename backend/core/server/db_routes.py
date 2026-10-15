@@ -5,7 +5,6 @@ HTTP endpoints for database monitoring, reporting, and maintenance.
 Keeps data layer visibility accessible to both browser dashboards and automation agents.
 """
 
-from typing import Optional
 import logging
 
 logger = logging.getLogger("cony.server.db")
@@ -14,7 +13,7 @@ logger = logging.getLogger("cony.server.db")
 def register(router) -> int:
     """Register database inspection routes onto the router."""
     try:
-        from core.database.store import Store
+        from database.store import Store
     except ImportError:
         logger.warning("database package not importable; skipping /database endpoints")
         return 0

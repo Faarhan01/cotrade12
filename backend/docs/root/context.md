@@ -9,7 +9,7 @@
 - **Purpose:** MetaTrader 5 gateway, real-time trading dashboard, research analytics platform, and algorithmic strategy engine
 - **Languages:** Python (backend), HTML/CSS/JS (frontend)
 - **Dependencies:** `MetaTrader5` (system), standard library only (Python). Frontend: no build step, no npm, no CDN, no web fonts.
-- **Database:** SQLite (`backend/db/data/peron.db`) in WAL mode with auto-indexing
+- **Database:** SQLite (`backend/database/data/peron.db`) in WAL mode with auto-indexing
 - **Gateway default port:** 8890 (not 8888 — Cotrade's `peron_bridge.py` uses 8888)
 
 ## Architecture (3-Layer Gateway)
@@ -26,7 +26,7 @@ AI agent / app  →  deamon (HTTP)  →  server (routing)  →  cony (engine)  �
 | `dashboard` | `backend/frontconnect/` | Web UI routes — optional extension |
 | `knowledgebase` | `backend/knowledgebase/` | Indicators, patterns, strategies as pure logic (no I/O) |
 | `tools/bot` | `backend/tools/bot/` | Backtesting, pattern checking, live execution |
-| `db` | `backend/db/` | SQLite access layer + schema |
+| `db` | `backend/database/` | SQLite access layer + schema |
 | `server` (extensions) | `backend/server/` | Research API, DB routes, Bot routes, handlers |
 
 Dependencies run one way: `deamon → server → cony`. Neither `cony` nor `server` imports `deamon`.
@@ -304,7 +304,7 @@ Other outputs:
 
 **bonferroni_threshold():** two-tailed critical |t| for N comparisons at family-wise alpha
 
-### 8. Database (`backend/db/database/`)
+### 8. Database (`backend/database/`)
 
 **Store** (`store.py`) — thread-safe SQLite wrapper with RLock:
 - `migrate()` — creates tables
@@ -566,8 +566,8 @@ Always check `split_check.consistent` before believing `promising`. A rule that 
 - `backend/docs/info/testing.md`
 - `backend/docs/strategies/stepindex.md`
 - `backend/gateway/docs/api-reference.md`
-- `docs/plans/unfinished.md`
-- `docs/issues/frontend-utils-js-escapehtml-issue.md`
+- `root/plans/unfinished.md`
+- `issues/frontend-utils-js-escapehtml-issue.md`
 - `docs/context.md` (THIS FILE) — comprehensive context
 
 ## Python Version / Platform
@@ -613,7 +613,7 @@ Always check `split_check.consistent` before believing `promising`. A rule that 
 
 ## Frontend Utils Bug Note (docs/issues/...)
 
-`escapeHtml` issue notes exist in `docs/issues/frontend-utils-js-escapehtml-issue.md`.
+`escapeHtml` issue notes exist in `issues/frontend-utils-js-escapehtml-issue.md`.
 
 ## Patterns in _SECTIONS (frontconnect)
 
@@ -653,6 +653,6 @@ _DEFAULT_SECTIONS = ("account", "terminal")
 
 - Stage 1 (physical reorganization) completed: integration packages moved under `backend/core/` (`server`, `frontconnect`, `database`).
 - `backend/bot` alias removed.
-- Default DB path still resolves to `backend/db/data/peron.db`.
+- Default DB path still resolves to `backend/database/data/peron.db`.
 - Frontend asset path fixed for the new package depth.
 - See `backend/docs/restructure.md` for plan and remaining stages.

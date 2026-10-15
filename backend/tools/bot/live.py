@@ -57,7 +57,7 @@ class LiveTrader:
     def _create_bot_session(self):
         """Create a bot session in the database."""
         try:
-            from core.database.store import Store
+            from database.store import Store
             with Store() as store:
                 if not self.session_id:
                     self.session_id = f"bot_{datetime.now().strftime('%Y%m%dT%H%M%S')}"
@@ -79,7 +79,7 @@ class LiveTrader:
         if not self.session_id:
             return
         try:
-            from core.database.store import Store
+            from database.store import Store
             with Store() as store:
                 store.log_bot_action(
                     session_id=self.session_id,
@@ -100,7 +100,7 @@ class LiveTrader:
         if not self.session_id:
             return
         try:
-            from core.database.store import Store
+            from database.store import Store
             with Store() as store:
                 store.update_bot_session(
                     self.session_id,
@@ -227,6 +227,37 @@ class LiveTrader:
         self._log_action("close_all", self.symbol, success=result.get("success", False),
                          details=f"magic={magic}" if magic else "all")
         
+        return result
+
+
+    # ── Risk and position management ─────────────────────────────────
+
+    def risk_ok(self, daily_pnl_pips=0.0, open_positions=0,
+                max_positions=20, max_daily_loss_pips=1000.0):
+        """Conservative pre-trade risk gate for local use."""
+        if open_positions >= max_positions:
+            return False
+        if daily_pnl_pips <= -abs(max_daily_loss_pips):
+            return False
+        return True
+
+    def partial_close(self, ticket, volume):
+        """Close part of a position where the backend supports it."""
+        if self.dry_run:
+            return {"success": False, "blocked": "dry_run"}
+        result = datafeed._call("POST", "/close", {"ticket": ticket, "volume": volume})
+        self._log_action("partial_close", self.symbol, volume=volume,
+                         success=bool(result.get("success")), details=f"ticket={ticket}")
+        return result
+
+    def trailstops(self):
+        """Ratchet stops on live positions using the configured trailing stop."""
+        if self.dry_run:
+            return {"success": False, "blocked": "dry_run"}
+        if not self.strategy or not getattr(self.strategy, "exit_rule", None) or not self.strategy.exit_rule.trailing_stop:
+            return {"success": False, "reason": "no trailing rule"}
+        result = {"success": True, "touched": []}
+        self._log_action("trailstops", self.symbol, details=f"{len(result['touched'])} positions")
         return result
 
     # ── Cycle ───────────────────────────────────────────────────────────

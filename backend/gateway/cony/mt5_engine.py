@@ -95,6 +95,12 @@ class MT5Engine:
     def start_auto_reconnect(self, interval: int = 20) -> None:
         self._conn.start_auto_reconnect(interval)
 
+    def on_disconnect(self, callback):
+        self._conn.on_disconnect(callback)
+
+    def ready_symbol(self, symbol):
+        return self._ready_symbol(symbol)
+
     def ensure_connected(self):
         self._conn.ensure_connected()
 

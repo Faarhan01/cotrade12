@@ -5,7 +5,6 @@ HTTP endpoints for algorithmic bot management, strategy queries, and signal eval
 Integrates the knowledgebase strategy evaluation with the live MT5 engine feed.
 """
 
-from typing import Optional
 import logging
 from datetime import datetime
 
@@ -36,7 +35,7 @@ def register(router, engine=None) -> int:
 
         stored = []
         try:
-            from core.database.store import Store
+            from database.store import Store
             with Store() as store:
                 stored = [s["name"] for s in store.list_strategies()]
         except Exception:
@@ -54,7 +53,7 @@ def register(router, engine=None) -> int:
     def create_bot_session(params, query, body):
         """Create a new bot trading session."""
         body = body or {}
-        from core.database.store import Store
+        from database.store import Store
         try:
             with Store() as store:
                 session_id = body.get("session_id") or f"bot_{datetime.now().strftime('%Y%m%dT%H%M%S')}"
@@ -88,7 +87,7 @@ def register(router, engine=None) -> int:
     @router.get("/bot/sessions")
     def list_bot_sessions(params, query, body):
         """List all bot sessions."""
-        from core.database.store import Store
+        from database.store import Store
         try:
             with Store() as store:
                 limit = int(query.get("limit", 50))
@@ -101,7 +100,7 @@ def register(router, engine=None) -> int:
     def get_bot_session(params, query, body):
         """Get details of a specific bot session including logs."""
         session_id = params["session_id"]
-        from core.database.store import Store
+        from database.store import Store
         try:
             with Store() as store:
                 sessions = store.list_bot_sessions(limit=1000)
@@ -121,7 +120,7 @@ def register(router, engine=None) -> int:
     @router.post("/bot/sessions/{session_id}/pause")
     def pause_bot_session(params, query, body):
         session_id = params["session_id"]
-        from core.database.store import Store
+        from database.store import Store
         try:
             with Store() as store:
                 store.update_bot_session(session_id, trades_count=0, pnl_pips=0.0,
@@ -136,7 +135,7 @@ def register(router, engine=None) -> int:
     @router.post("/bot/sessions/{session_id}/resume")
     def resume_bot_session(params, query, body):
         session_id = params["session_id"]
-        from core.database.store import Store
+        from database.store import Store
         try:
             with Store() as store:
                 store.update_bot_session(session_id, trades_count=0, pnl_pips=0.0,
@@ -152,7 +151,7 @@ def register(router, engine=None) -> int:
         """Stop a running bot session."""
         session_id = params["session_id"]
         body = body or {}
-        from core.database.store import Store
+        from database.store import Store
         try:
             with Store() as store:
                 trades_count = int(body.get("trades_count", 0))
@@ -173,7 +172,7 @@ def register(router, engine=None) -> int:
         """Get execution logs for a bot session."""
         session_id = params["session_id"]
         limit = int(query.get("limit", 200))
-        from core.database.store import Store
+        from database.store import Store
         try:
             with Store() as store:
                 logs = store.list_bot_logs(session_id=session_id, limit=limit)
@@ -186,7 +185,7 @@ def register(router, engine=None) -> int:
         """Record a bot action (order, evaluation, etc.)"""
         session_id = params["session_id"]
         body = body or {}
-        from core.database.store import Store
+        from database.store import Store
         try:
             with Store() as store:
                 log_id = store.log_bot_action(
@@ -208,7 +207,7 @@ def register(router, engine=None) -> int:
         """Update session performance metrics."""
         session_id = params["session_id"]
         body = body or {}
-        from core.database.store import Store
+        from database.store import Store
         try:
             with Store() as store:
                 trades_count = int(body.get("trades_count", 0))

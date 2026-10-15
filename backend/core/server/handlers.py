@@ -8,14 +8,13 @@ and does no MT5 work itself, so the engine stays the only place that knows
 how MetaTrader 5 is actually called.
 """
 
-from datetime import datetime, timedelta
 import logging
 import math
-import os
 import traceback
 
 from core.server import validation as v
-from core.server.errors import BadRequest, UpstreamUnavailable, NotFound
+from core.server.errors import BadRequest, UpstreamUnavailable
+from datetime import timedelta
 from core.server.routes import Router
 from cony import enums
 from cony.mt5_engine import MT5Engine, MT5ConnectionError
@@ -65,6 +64,20 @@ class RouteHandlers:
                 }
                 payload["symbol_cache"] = engine.symbol_cache_info()
             return payload
+
+        @r.get("/metrics")
+        def metrics(params, query, body):
+            """Operational metrics for monitoring."""
+            from database.store import Store
+            with Store() as store:
+                stats = store.stats()
+            from datetime import datetime, timezone
+            return {
+                "service": "cony-gateway",
+                "mt5_connected": engine.is_connected,
+                "database": stats,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
 
         @r.post("/symbol-cache/clear")
         def clear_symbol_cache(params, query, body):

@@ -88,18 +88,28 @@ class Research:
             "vwap": ("volume", ["high", "low", "close", "volume"], "Volume-weighted average price."),
             "cci": ("momentum", ["high", "low", "close"], "Commodity Channel Index."),
             "z_score": ("statistical", ["close"], "Standardized deviation / Z-score over window."),
+            "obv": ("volume", ["close", "volume"], "On-Balance Volume."),
+            "cmf": ("volume", ["high", "low", "close", "volume"], "Chaikin Money Flow."),
+            "parabolic_sar": ("trend", ["high", "low"], "Parabolic SAR."),
+            "supertrend": ("trend", ["high", "low", "close"], "SuperTrend (value, direction)."),
+            "keltner": ("volatility", ["high", "low", "close"], "Keltner Channels."),
+            "ichimoku": ("trend", ["high", "low", "close"], "Ichimoku components."),
         }
         out = []
         for name in sorted(ind.REGISTRY):
             category, inputs, description = meta.get(name, ("other", ["close"], ""))
-            multi = name in ("bollinger", "macd", "donchian")
+            multi = name in ("bollinger", "macd", "donchian", "supertrend",
+                             "keltner", "ichimoku")
             out.append({
                 "name": name,
                 "category": category,
                 "inputs": inputs,
                 "series": {"bollinger": ["lower", "middle", "upper"],
                            "macd": ["macd", "signal", "histogram"],
-                           "donchian": ["upper", "lower"]}.get(name, ["value"]),
+                           "donchian": ["upper", "lower"],
+                           "supertrend": ["value", "direction"],
+                           "keltner": ["lower", "middle", "upper"],
+                           "ichimoku": ["tenkan", "kijun", "senkou_a", "senkou_b"]}.get(name, ["value"]),
                 "description": description,
                 "note": "Returns a list aligned to the input; None during warm-up."
                         if not multi else "Returns several aligned series.",
@@ -168,16 +178,17 @@ class Research:
         lows = [b.low for b in bars]
         args = list(params or [])
 
-        if name in ("atr", "stochastic", "adx", "true_range"):
-            result = ind.compute(name, highs, lows, closes, *args)
-        elif name == "donchian":
-            result = ind.compute(name, highs, lows, *args)
-        else:
-            result = ind.compute(name, closes, *args)
+        inputs = kstrategies.Context._INDICATOR_INPUTS.get(name, ("close",))
+        sources = {"high": highs, "low": lows, "close": closes,
+                   "volume": [getattr(b, "tick_volume", 0) or 0 for b in bars]}
+        result = ind.compute(name, *[sources[part] for part in inputs], *args)
 
         series = {"bollinger": ["lower", "middle", "upper"],
                   "macd": ["macd", "signal", "histogram"],
-                  "donchian": ["upper", "lower"]}.get(name)
+                  "donchian": ["upper", "lower"],
+                  "supertrend": ["value", "direction"],
+                  "keltner": ["lower", "middle", "upper"],
+                  "ichimoku": ["tenkan", "kijun", "senkou_a", "senkou_b"]}.get(name)
 
         if series:
             out = {}
@@ -241,6 +252,7 @@ class Research:
             result["follow_through"] = follow
             result["horizon"] = horizon
 
+        result["horizon"] = horizon
         result["significant_after_correction"] = sorted(
             (k for k, v in follow.items() if v.get("verdict") == "significant"),
             key=lambda k: -abs(follow[k].get("t_statistic_edge") or 0))
@@ -296,6 +308,9 @@ class Research:
             problems.append("'entry_params' must be an object")
 
         exit_rule = spec.get("exit_rule") or {}
+        if not isinstance(exit_rule, dict):
+            problems.append("exit_rule must be an object")
+            exit_rule = {}
         if exit_rule:
             if not any(exit_rule.get(k) for k in
                        ("take_profit", "stop_loss", "trailing_stop",
@@ -303,9 +318,10 @@ class Research:
                 problems.append(
                     "exit_rule needs at least one of take_profit, stop_loss, "
                     "trailing_stop or time_stop_bars, or positions never close")
-            tp, sl = exit_rule.get("take_profit"), exit_rule.get("stop_loss")
-            if (tp and tp <= 0) or (sl and sl <= 0):
-                problems.append("take_profit and stop_loss must be positive")
+            for key in ("take_profit", "stop_loss"):
+                value = exit_rule.get(key)
+                if value is not None and (not isinstance(value, (int, float)) or value <= 0):
+                    problems.append(f"{key} must be a positive number")
 
         if problems:
             return {"valid": False, "problems": problems}
@@ -314,6 +330,15 @@ class Research:
             plan.entry  # noqa: B018 - raises if the rule name is unknown
         except KeyError as exc:
             return {"valid": False, "problems": [str(exc)]}
+
+        import inspect
+        try:
+            inspect.signature(plan.entry).bind(None, None, **params)
+        except TypeError as exc:
+            problems.append(f"entry_params do not match '{entry}': {exc}")
+
+        if problems:
+            return {"valid": False, "problems": problems}
         return {"valid": True, "strategy": plan.to_dict()}
 
     def save_strategy(self, spec: Dict) -> Dict:
@@ -361,12 +386,15 @@ class Research:
             return validation
         plan = kstrategies.Strategy.from_dict(validation["strategy"])
 
-        bars = self.bars(symbol, timeframe, count)
+        try:
+            bars = self.bars(symbol, timeframe, count)
+            inst = datafeed.instrument(symbol)
+        except Exception as exc:  # noqa: BLE001 - surface upstream failures honestly
+            return {"error": str(exc)}
         if len(bars) < warmup + 50:
             return {"error": f"only {len(bars)} bars available, need "
                              f"{warmup + 50} to evaluate"}
 
-        inst = datafeed.instrument(symbol)
         if spread_pips is not None:
             plan.spread_pips = spread_pips
         elif not plan.spread_pips:
@@ -375,7 +403,10 @@ class Research:
         plan.symbol = symbol
         plan.timeframe = timeframe
 
-        result = run(plan, bars, inst, warmup=warmup)
+        try:
+            result = run(plan, bars, inst, warmup=warmup)
+        except (ValueError, TypeError) as exc:
+            return {"error": str(exc)}
         report = result.to_dict()
         report["symbol"] = symbol
         report["timeframe"] = timeframe
@@ -385,7 +416,10 @@ class Research:
             report["net_pips"] * (inst.get("pip_value_per_lot") or 0.0), 2)
         report["min_lot"] = inst.get("min_lot")
 
-        split = sweep(plan, bars, inst, warmup=warmup)
+        try:
+            split = sweep(plan, bars, inst, warmup=warmup)
+        except (ValueError, TypeError) as exc:
+            return {"error": str(exc), **report}
         if "train" in split:
             report["split_check"] = {
                 "consistent": split["consistent"],
@@ -412,7 +446,7 @@ class Research:
                 "profit_factor": report["profit_factor"],
                 "net_points": report["net_points"],
                 "gross_points": report["gross_points"],
-                "spread_cost": report["trades"] * 2 * plan.spread_pips
+                "spread_cost": report["trades"] * plan.spread_pips
                                * (inst.get("pip") or 1.0),
                 "max_drawdown": report["max_drawdown"],
                 "expectancy": report["expectancy"],

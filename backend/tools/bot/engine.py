@@ -19,9 +19,11 @@ So every result reports, at minimum:
   * a verdict computed from those, not from profit
 
 Execution assumptions are stated rather than hidden: fills happen at the bar's
-close, take-profit and stop are checked against subsequent bars' high/low, and
-stops fill at the stop price rather than through it. All three flatter the
-result, so a strategy that fails here cannot succeed live.
+close, take-profit and stop are checked against subsequent bars' high/low, a
+bar that touches both exits at the stop (pessimistic), and trailing stops are
+only tested from the following bar onward. Bars are treated as MT5 bid quotes,
+so a long pays the ask on entry and the bid on exit, and a short pays the bid
+on entry and the ask on exit.
 """
 
 import math
@@ -30,6 +32,10 @@ from typing import Dict, List, Optional
 
 from knowledgebase.patterns import Bar
 from knowledgebase.strategies import Context, Strategy
+
+
+class StrategyError(RuntimeError):
+    """Raised when a strategy cannot be evaluated safely."""
 
 
 @dataclass
@@ -43,6 +49,7 @@ class Trade:
     pnl_points: float
     reason: str               # take_profit | stop_loss | time | trailing
     bars_held: int
+    spread_cost: float = 0.0
 
     @property
     def won(self) -> bool:
@@ -60,6 +67,7 @@ class BacktestResult:
     to_ts: Optional[int] = None
     trades: List[Trade] = field(default_factory=list)
     pip: float = 1.0              # pip size in price units, for reporting
+    tie_policy: str = "pessimistic"
 
     @property
     def net_pips(self) -> float:
@@ -94,6 +102,14 @@ class BacktestResult:
     @property
     def net_points(self) -> float:
         return sum(t.pnl_points for t in self.trades)
+
+    @property
+    def spread_cost(self) -> float:
+        return sum(t.spread_cost for t in self.trades)
+
+    @property
+    def gross_points(self) -> float:
+        return self.net_points + self.spread_cost
 
     @property
     def win_rate(self) -> Optional[float]:
@@ -146,7 +162,11 @@ class BacktestResult:
 
     @property
     def sharpe_ratio(self) -> Optional[float]:
-        """Annualized or sample-scaled Sharpe ratio of trades."""
+        """Per-trade Sharpe (mean / stdev), not annualised.
+
+        Multiplying by sqrt(trade_count) here would reproduce t_statistic and
+        present the same number under a second, more impressive name.
+        """
         if len(self.trades) < 3:
             return None
         n = len(self.trades)
@@ -155,11 +175,11 @@ class BacktestResult:
         var = sum((p - mean_pnl) ** 2 for p in pnls) / (n - 1)
         if var <= 0:
             return None
-        return round((mean_pnl / math.sqrt(var)) * math.sqrt(n), 2)
+        return round(mean_pnl / math.sqrt(var), 4)
 
     @property
     def sortino_ratio(self) -> Optional[float]:
-        """Sortino ratio measuring return against downside volatility."""
+        """Per-trade Sortino (mean / downside deviation)."""
         if len(self.trades) < 3:
             return None
         n = len(self.trades)
@@ -171,7 +191,7 @@ class BacktestResult:
         downside_var = sum(p ** 2 for p in downside) / n
         if downside_var <= 0:
             return None
-        return round((mean_pnl / math.sqrt(downside_var)) * math.sqrt(n), 2)
+        return round(mean_pnl / math.sqrt(downside_var), 4)
 
     @property
     def max_consecutive_wins(self) -> int:
@@ -211,7 +231,8 @@ class BacktestResult:
             "net_points": self.net_points,
             "net_pips": self.net_pips,
             "pip": self.pip,
-            "gross_points": sum(t.pnl_points for t in self.trades),
+            "gross_points": self.gross_points,
+            "spread_cost": self.spread_cost,
             "expectancy": self.expectancy,
             "t_statistic": self.t_statistic,
             "sharpe_ratio": self.sharpe_ratio,
@@ -220,6 +241,7 @@ class BacktestResult:
             "max_consecutive_losses": self.max_consecutive_losses,
             "max_drawdown": self.max_drawdown,
             "verdict": self.verdict,
+            "tie_policy": self.tie_policy,
             "avg_bars_held": (sum(t.bars_held for t in self.trades)
                               / len(self.trades)) if self.trades else None,
         })
@@ -229,7 +251,7 @@ class BacktestResult:
 # ─── Verdict thresholds ───────────────────────────────────────────────
 # Chosen once, in one place, so every report is judged the same way.
 
-SIGNIFICANT_T = 2.0        # p < 0.05 two-tailed
+SIGNIFICANT_T = 2.045       # conservative p<0.05 two-tailed at n=30
 STRONG_T = 3.0
 MIN_TRADES = 30            # below this nothing is measurable
 MIN_EDGE_VS_COST = 1.0     # gross profit must at least cover what it paid
@@ -261,10 +283,9 @@ def classify(result: BacktestResult) -> str:
     if t is None or abs(t) < SIGNIFICANT_T:
         return "noise"
 
-    gross = sum(t.pnl_points for t in result.trades)
     net = result.net_points
-    # "Fragile" means it only survived because gross happened to exceed cost.
-    if net <= 0:
+    # "Fragile" means gross did not comfortably cover the round-trip cost.
+    if net <= 0 or result.gross_points < result.spread_cost * MIN_EDGE_VS_COST:
         return "fragile"
     if abs(t) >= STRONG_T and net > 0:
         return "strong"
@@ -285,9 +306,22 @@ def run(strategy: Strategy, bars: List[Bar], inst: Dict,
     """
     if len(bars) < warmup + 10:
         return BacktestResult(strategy_name=strategy.name,
-                              symbol=inst.get("symbol", ""))
+                              symbol=inst.get("symbol", ""),
+                              timeframe=strategy.timeframe,
+                              bars=len(bars),
+                              from_ts=bars[0].time if bars else None,
+                              to_ts=bars[-1].time if bars else None)
 
-    pip = pip if pip is not None else (inst.get("pip") or 1.0)
+    pip = pip if pip is not None else inst.get("pip")
+    if not pip or pip <= 0:
+        raise ValueError(
+            "no pip size for this instrument; pass pip= explicitly or "
+            "load symbol_info before running a backtest")
+
+    if len(bars) > 1 and any(bars[k].time <= bars[k - 1].time
+                             for k in range(1, len(bars))):
+        raise ValueError("bars must be strictly time-ordered")
+
     spread_pips = strategy.spread_pips or inst.get("spread_pips") or 0.0
     spread_pts = spread_pips * pip
 
@@ -308,94 +342,86 @@ def run(strategy: Strategy, bars: List[Bar], inst: Dict,
     while i < len(bars) - 1:
         try:
             side = strategy.signal(context, i)
-        except (IndexError, KeyError, TypeError):
-            side = 0
+        except (IndexError, KeyError) as exc:
+            raise StrategyError(
+                f"{strategy.name} failed at bar {i}: {exc}") from exc
         if side == 0:
             i += 1
             continue
 
         bar = bars[i]
-        # Enter at the close, paying the spread on the side we take.
-        entry = bar.close + (spread_pts if side == 1 else -spread_pts)
+        # MT5 bars are bid quotes. A long buys at the ask and sells at the bid;
+        # a short sells at the bid and buys back at the ask. This charges one
+        # round-trip spread exactly once, rather than charging it on both legs.
+        entry = bar.close + (spread_pts if side == 1 else 0.0)
         tp = entry + side * exit_rule.take_profit * pip if exit_rule.take_profit else None
         sl = entry - side * exit_rule.stop_loss * pip if exit_rule.stop_loss else None
         max_bars = exit_rule.time_stop_bars or 20
 
-        exit_price, reason = None, "time"
-        trail = None
+        def exit_price_at(level: float) -> float:
+            return level + (spread_pts if side == -1 else 0.0)
+
+        exit_price, reason, exit_index = None, "time", min(i + max_bars, len(bars) - 1)
+        pending_trail = None
         j = i + 1
-        limit = min(i + 1 + max_bars, len(bars))
-        while j < limit:
+        while j <= exit_index:
             b = bars[j]
-            if side == 1:
-                if tp is not None and b.high >= tp:
-                    exit_price, reason = tp, "take_profit"
-                    break
-                if sl is not None and b.low <= sl:
-                    exit_price, reason = sl, "stop_loss"
-                    break
-            else:
-                if tp is not None and b.low <= tp:
-                    exit_price, reason = tp, "take_profit"
-                    break
-                if sl is not None and b.high >= sl:
-                    exit_price, reason = sl, "stop_loss"
+
+            # A level derived from an earlier bar is tested on this bar first.
+            if pending_trail is not None:
+                hit = (b.low <= pending_trail) if side == 1 else (b.high >= pending_trail)
+                if hit:
+                    exit_price, reason, exit_index = pending_trail, "trailing", j
                     break
 
-            # Breakeven stop: move stop to entry price once favorable move reaches threshold
+            # Pessimistic tie policy: if a bar reaches both levels, assume the
+            # stop was touched first. Without this, tight TP/SL rules book
+            # take-profits on bars that also traded through the stop.
+            if side == 1:
+                if sl is not None and b.low <= sl:
+                    exit_price, reason, exit_index = exit_price_at(sl), "stop_loss", j
+                    break
+                if tp is not None and b.high >= tp:
+                    exit_price, reason, exit_index = exit_price_at(tp), "take_profit", j
+                    break
+            else:
+                if sl is not None and b.high >= sl:
+                    exit_price, reason, exit_index = exit_price_at(sl), "stop_loss", j
+                    break
+                if tp is not None and b.low <= tp:
+                    exit_price, reason, exit_index = exit_price_at(tp), "take_profit", j
+                    break
+
             if exit_rule.breakeven_after_pips:
                 favorable = (b.high - entry) if side == 1 else (entry - b.low)
                 if favorable >= exit_rule.breakeven_after_pips * pip:
-                    if side == 1:
-                        sl = max(sl or entry, entry)
-                    else:
-                        sl = min(sl or entry, entry)
+                    sl = max(sl or entry, entry) if side == 1 else min(sl or entry, entry)
 
-            # A trailing stop is ratcheted on each bar and checked on the NEXT
-            # bar, because a level can only be known to have been respected
-            # once a subsequent bar fails to trade through it. Checking the
-            # same bar it was derived from would fill on a price the bar
-            # never actually reached after the level was set.
             if exit_rule.trailing_stop:
                 moved = (b.high - entry) if side == 1 else (entry - b.low)
                 candidate = moved - exit_rule.trailing_stop * pip
                 if candidate > 0:
-                    # A trailing stop only ever moves in the trade's favour.
-                    # Re-deriving it from *this* bar's high/low alone meant a
-                    # bar with a lower high moved the stop backwards, so the
-                    # stop loosened instead of tightening and the trade stayed
-                    # on far longer than the rule describes. Keep the best
-                    # level seen so far.
-                    best = candidate if trail is None else max(
-                        candidate, (trail - entry) * side)
-                    trail = entry + side * best
-
-            if trail is not None:
-                hit = (b.low <= trail) if side == 1 else (b.high >= trail)
-                if hit and j > i + 1:
-                    exit_price, reason = trail, "trailing"
-                    break
+                    level = entry + side * candidate
+                    if pending_trail is None or side * (level - entry) > side * (pending_trail - entry):
+                        pending_trail = level
             j += 1
 
         if exit_price is None:
-            if trail is not None and (
-                    (side == 1 and bars[min(j, len(bars) - 1)].low <= trail)
-                    or (side == -1 and bars[min(j, len(bars) - 1)].high >= trail)):
-                exit_price, reason = trail, "trailing"
+            if pending_trail is not None:
+                exit_price, reason = exit_price_at(pending_trail), "trailing"
             else:
-                # The window can run past the end of the data when the final
-                # trade is still open; close at the last available bar.
-                last = bars[min(j, len(bars) - 1)]
-                exit_price = last.close - (spread_pts if side == 1 else -spread_pts)
+                last = bars[exit_index]
+                exit_price = last.close + (spread_pts if side == -1 else 0.0)
                 reason = "time"
 
         pnl = side * (exit_price - entry)
         result.trades.append(Trade(
-            side=side, entry_index=i, exit_index=j,
+            side=side, entry_index=i, exit_index=exit_index,
             entry_price=entry, exit_price=exit_price,
-            pnl_points=pnl, reason=reason, bars_held=j - i,
+            pnl_points=pnl, reason=reason, bars_held=exit_index - i,
+            spread_cost=spread_pts,
         ))
-        i = j + 1
+        i = exit_index + 1
 
     return result
 

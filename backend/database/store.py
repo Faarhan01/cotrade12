@@ -18,13 +18,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Optional
 
-from core.database.schema import SCHEMA, REPORT_FIELDS, STRATEGY_FIELDS
+from database.schema import SCHEMA, REPORT_FIELDS, STRATEGY_FIELDS
 
 _BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DEFAULT_PATH = os.environ.get(
-    "PERON_DB",
-    os.path.join(_BACKEND_ROOT, "db", "data", "peron.db"),
-)
+from core.config import GatewayConfig
+
+DEFAULT_PATH = GatewayConfig.from_env().db_path
 
 
 def new_run_id(prefix: str = "run") -> str:
@@ -49,6 +48,10 @@ class Store:
             # Apply schema idempotently so fresh/upgrade databases are usable.
             for statement in SCHEMA:
                 self._conn.execute(statement)
+            try:
+                self._conn.execute("ALTER TABLE strategies ADD COLUMN deleted_at TEXT")
+            except Exception:  # noqa: BLE001 - column may already exist
+                pass
             self._conn.commit()
 
     def close(self):
@@ -140,7 +143,7 @@ class Store:
         return Strategy.from_dict(self._row_to_strategy_dict(rows[0])) if rows else None
 
     def list_strategies(self) -> List[Dict]:
-        return self.query("SELECT * FROM strategies ORDER BY name")
+        return self.query("SELECT * FROM strategies WHERE deleted_at IS NULL ORDER BY name")
 
     @staticmethod
     def _row_to_strategy_dict(row: Dict) -> Dict:
@@ -153,9 +156,11 @@ class Store:
         return d
 
     def delete_strategy(self, name: str) -> bool:
-        """Remove a strategy. Returns whether a row was actually deleted."""
+        """Soft-delete a strategy. Returns whether a row was changed."""
         with self._lock:
-            cur = self._conn.execute("DELETE FROM strategies WHERE name = ?", (name,))
+            cur = self._conn.execute(
+                "UPDATE strategies SET deleted_at = datetime('now') "
+                "WHERE name = ? AND deleted_at IS NULL", (name,))
             self._conn.commit()
             return cur.rowcount > 0
 

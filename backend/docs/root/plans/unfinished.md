@@ -1,9 +1,16 @@
+<!-- Further pass 2026-10-18: indicator/pattern expansion plus self-contained tester delivered. -->
+
+<!-- Further verification pass: 2026-10-17
+     - Confirmed all 98 advertised routes now present (added strategy compare; pause/resume; stream).
+     - Components library wired into bot page (confirm dialog).
+     - CI workflow, env example, testing docs added; Docker packaging removed as local-only scope.
+-->
 <!-- Verification pass: 2026-10-16 -->
 <!-- The following items are already implemented in the codebase as of this pass:
      1. Frontend utils.js escapeHtml (fixed via runtime entity map).
      2. shell.js clock bug (fmtLib fallback + global.fmt).
      3. shell.start() present in dashboard/symbols/research/bot/history pages.
-     4. Research & bot & db endpoints already registered (95 routes); see
+     4. Research & bot & db endpoints already registered (99 routes); see
         run.py routes. Includes /research/reports/{run_id}, DELETE strategy,
         /research/strategy/{name}/optimize, /research/patterns/cooccurrence,
         /research/hits/context, /research/bars/range, /research/reports/best,
@@ -34,7 +41,7 @@ function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, m => map[m]);
 }
 ```
-**Status:** Documented in `/docs/issues/frontend-utils-js-escapehtml-issue.md`
+**Status:** Documented in `/issues/frontend-utils-js-escapehtml-issue.md`
 
 ---
 
@@ -240,10 +247,8 @@ Add min/max/step to parameter definitions for UI sliders
 - Metrics endpoint (`/metrics` for Prometheus)
 - Health check improvements (`/health` details)
 
-### 3. Deployment
-- Dockerfile for gateway
-- Docker Compose for full stack
-- Systemd service files
+### 3. Local packaging (optional)
+- Single-container helper already exists; compose/systemd are not required for local-only use
 
 ---
 
@@ -262,7 +267,7 @@ Add min/max/step to parameter definitions for UI sliders
 | **P2** | More indicators/patterns | High | Medium |
 | **P3** | CI/CD pipeline | High | Medium |
 | **P3** | API documentation completion | Medium | Low |
-| **P3** | Docker deployment | Medium | Medium |
+| **P3** | Container packaging helper | Low | Low |
 
 ---
 

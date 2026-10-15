@@ -16,6 +16,15 @@
 (function () {
   "use strict";
 
+  function role(name) {
+    return document.querySelector('[data-role="' + name + '"]');
+  }
+
+  function setRole(name, value) {
+    var node = role(name);
+    if (node && node.textContent !== value) node.textContent = value;
+  }
+
   var boot = dom.bootstrap();
   var clockOffset = Number(boot.clock_offset) || 0;
 
@@ -47,6 +56,12 @@
         node.className = "card-value " + fmt.tone(p);
       }
     }
+    var marginLevel = a.margin_level !== undefined ? a.margin_level :
+      (a.margin && a.equity ? (a.equity / a.margin * 100) : undefined);
+    if (marginLevel !== undefined && marginLevel !== null)
+      setRole("margin-level", fmt.num(marginLevel, 2) + "%");
+    if (a.leverage !== undefined && a.leverage !== null)
+      setRole("leverage", String(a.leverage) + ":1");
   }
 
   paintAccount(boot.account);
@@ -166,7 +181,7 @@
                   / Number(s.session_open)) * 100;
       }
       html += "<tr>"
-        + '<td class="sym" data-symbol="' + fmt.escapeHtml(s.name) + '">'
+        + '<td class="sym" data-symbol="' + fmt.escapeHtml(s.name) + '" data-session-open="' + (s.session_open || "") + '">'
         + fmt.escapeHtml(s.name) + "</td>"
         + '<td class="num bid" data-field="bid" data-digits="' + d + '">'
         + fmt.num(s.bid, d) + "</td>"
@@ -240,6 +255,14 @@
         var pip = parseFloat(spreadCell.getAttribute("data-pip"));
         spreadCell.textContent = fmt.num(
           pip > 0 ? (t.ask - t.bid) / pip : NaN, 2);
+
+        var sessionOpen = parseFloat(cell.getAttribute("data-session-open"));
+        var changeCell = row.querySelector('td[data-field="change"]');
+        if (changeCell && sessionOpen && !isNaN(sessionOpen)) {
+          var change = (Number(t.bid) - sessionOpen) / sessionOpen * 100;
+          changeCell.textContent = change === null ? "—" : fmt.signed(change, 2);
+          changeCell.className = "num " + fmt.tone(change);
+        }
       });
     },
     error: function () { markStream(false); }

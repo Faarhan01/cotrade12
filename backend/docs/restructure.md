@@ -180,7 +180,7 @@ backend/
 │   ├── config.py                # moved from gateway/deamon/config.py (or re-export)
 │   ├── server/                  # moved from backend/server/
 │   ├── frontconnect/            # moved from backend/frontconnect/
-│   └── database/                # moved from backend/db/database/
+│   └── database/                # moved from backend/database/
 ├── db/
 │   └── data/
 │       └── peron.db
@@ -199,8 +199,8 @@ backend/
 
 Things deliberately kept exactly as they are:
 
-- `backend/db/database/` and `backend/db/data/` stay separate: DB code lives
-  under `core/database/`, but runtime data keeps its path under `backend/db/`.
+- `backend/database/` and `backend/database/data/` stay separate: DB code lives
+  under `database/`, but runtime data keeps its path under `backend/database/`.
 - `backend/knowledgebase/` is untouched in shape (pure logic).
 - `backend/gateway/cony/` and `backend/gateway/deamon/` keep their roles.
 - Wire format, DB schema, and frontend remain identical.
@@ -262,10 +262,10 @@ backend/core/__init__.py    # module docstring only, no code
 ```bash
 git mv backend/server        backend/core/server
 git mv backend/frontconnect  backend/core/frontconnect
-git mv backend/db/database   backend/core/database
+# database package now lives at backend/database/
 ```
 
-`backend/db/data/` and `backend/db` itself stay.
+`backend/database/data/` and `backend/database` itself stay.
 
 #### 1.3 Update every internal import
 
@@ -309,7 +309,7 @@ change):
 #### 1.6 Path constants
 
 - `core.database.store.DEFAULT_PATH` stays
-  `backend/db/data/peron.db` (only the module moved).
+  `backend/database/data/peron.db` (only the module moved).
 - H in `handlers.py` (`_frontend_hint`, `_assets.FRONTEND_DIR`) — verify it
   still points at `repo/frontend/`. With the file now under
   `backend/core/server/`, the parent traversal
@@ -388,7 +388,7 @@ classes.
 #### 3.1 Repository wrappers
 
 ```
-core/database/repositories.py
+database/repositories.py
   SqliteStrategyRepository(StrategyRepository)
   SqliteReportRepository(ReportRepository)
   SqlitePatternHitRepository(PatternHitRepository)
@@ -444,7 +444,7 @@ See [Appendix C](#appendix-c--cli-command-map) for the command mapping.
 #### 4.1 Add `cli/` layer
 
 ```
-backend/cli/
+backend/gateway/cli/
 ├── __init__.py
 ├── __main__.py        # python -m cli
 ├── app.py             # argparser/typer root
@@ -636,9 +636,9 @@ warn_unused_ignores = true
 | Before | After | Stage |
 |---|---|---|
 | `backend/bot/__init__.py` | deleted (shim optional) | 1.4 |
-| `backend/db/database/schema.py` | `backend/core/database/schema.py` | 1.2 |
-| `backend/db/database/store.py` | `backend/core/database/store.py` | 1.2 |
-| `backend/db/database/__init__.py` | `backend/core/database/__init__.py` | 1.2 |
+| `backend/database/schema.py` | `backend/database/schema.py` | 1.2 |
+| `backend/database/store.py` | `backend/database/store.py` | 1.2 |
+| `backend/database/__init__.py` | `backend/database/__init__.py` | 1.2 |
 | `backend/frontconnect/__init__.py` | `backend/core/frontconnect/__init__.py` | 1.2 |
 | `backend/frontconnect/assets.py` | `backend/core/frontconnect/assets.py` | 1.2 |
 | `backend/frontconnect/views.py` | `backend/core/frontconnect/views.py` | 1.2 |
@@ -656,9 +656,9 @@ warn_unused_ignores = true
 | (new) | `core/application/ports.py` | 2.1 |
 | (new) | `core/application/container.py` | 2.3 |
 | (new) | `core/application/services/*` | 2.2 |
-| (new) | `backend/core/database/repositories.py` | 3.1 |
+| (new) | `backend/database/repositories.py` | 3.1 |
 | (new) | `gateway/cony/adapter.py` | 3.2 |
-| (new) | `backend/cli/*` | 4.1 |
+| (new) | `backend/gateway/cli/*` | 4.1 |
 | (new) | `backend/core/composition.py` | 5.2 |
 | (new) | `backend/core/plugins.py` | 6.1 |
 | (new) | `backend/core/extensions/*` | 6.1 |
@@ -667,7 +667,7 @@ warn_unused_ignores = true
 
 - `backend/core/__init__.py`
 - `backend/core/application/__init__.py`
-- `backend/cli/__init__.py`
+- `backend/gateway/cli/__init__.py`
 - `backend/tests/__init__.py`
 
 ---
@@ -838,7 +838,7 @@ backend/tests/
   on every commit; aim <5s.
 - Integration tests (`verify.py` against a running daemon) run nightly or
   manually; depend on MT5 Windows.
-- No test may touch the real `backend/db/data/peron.db`.
+- No test may touch the real `backend/database/data/peron.db`.
 - Coverage target: >=80% on new `core/application` from Stage 2 onwards.
 
 ---

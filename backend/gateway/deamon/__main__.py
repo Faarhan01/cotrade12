@@ -32,7 +32,6 @@ from cony import ConnectionManager, MT5Engine
 from cony.marketbook import MarketBookError
 from cony.mt5_engine import (
     MT5ConnectionError,
-    MT5Error,
     NotFoundError,
     OrderRejectedError,
     SymbolNotFoundError,
@@ -434,6 +433,8 @@ class Gateway:
     """Wires the engine, router and HTTP server into one runnable thing."""
 
     def __init__(self):
+        from core.config import validate as _validate_config
+        _validate_config(config)
         self.engine = self.build_engine()
         self.router = Router()
         # Stage 5: single composition root.
@@ -452,7 +453,7 @@ class Gateway:
         # so the local list does not claim symbols the terminal has forgotten.
         # The cached symbol names go with it - a reconnect can land on a
         # different account with a different broker symbol list.
-        self.engine._conn.on_disconnect(self._on_terminal_reset)
+        self.engine.on_disconnect(self._on_terminal_reset)
 
     def _on_terminal_reset(self):
         self.engine.market_book.release_all_on_disconnect()
@@ -475,14 +476,14 @@ class Gateway:
     def connect(self) -> bool:
         """Attach to the terminal, reporting rather than raising."""
         try:
-            info = self.engine._conn.connect()
+            info = self.engine.connect()
             logger.info(
                 "Connected to MT5 terminal (build %s, account %s)",
                 info["terminal"]["build"],
                 info["account"]["login"] if info.get("account") else "?",
             )
             if config.auto_reconnect:
-                self.engine._conn.start_auto_reconnect(config.reconnect_interval)
+                self.engine.start_auto_reconnect(config.reconnect_interval)
             return True
         except (ConnectionError, MT5ConnectionError) as exc:
             logger.warning("Could not connect to MT5: %s", exc)
@@ -522,7 +523,7 @@ class Gateway:
             self.engine.market_book.unsubscribe_all()
         except Exception:  # noqa: BLE001 - best effort during teardown
             pass
-        self.engine._conn.disconnect()
+        self.engine.disconnect()
         logger.info("Stopped.")
 
 

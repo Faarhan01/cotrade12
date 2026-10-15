@@ -34,6 +34,7 @@ class Context:
     bars: List[Bar]
     indicators: Dict[str, list] = field(default_factory=dict)
     matches: Dict[int, List[PatternMatch]] = field(default_factory=dict)
+    scanned: bool = field(default=False, init=False)
 
     def __len__(self) -> int:
         return len(self.bars)
@@ -47,8 +48,26 @@ class Context:
     def low(self) -> List[float]:
         return [b.low for b in self.bars]
 
-    # Indicators that take (high, low, close, ...) rather than (close, ...).
-    _OHLC = {"atr", "stochastic", "adx", "true_range"}
+    def volume(self) -> List[float]:
+        return [float(getattr(b, "tick_volume", 0) or 0) for b in self.bars]
+
+    # Indicator inputs shared by Context and the public Research API so both
+    # call indicators the same way and cannot drift apart.
+    _INDICATOR_INPUTS = {
+        "atr": ("high", "low", "close"),
+        "stochastic": ("high", "low", "close"),
+        "adx": ("high", "low", "close"),
+        "true_range": ("high", "low", "close"),
+        "cci": ("high", "low", "close"),
+        "supertrend": ("high", "low", "close"),
+        "keltner": ("high", "low", "close"),
+        "ichimoku": ("high", "low", "close"),
+        "parabolic_sar": ("high", "low"),
+        "donchian": ("high", "low"),
+        "vwap": ("high", "low", "close", "volume"),
+        "obv": ("close", "volume"),
+        "cmf": ("high", "low", "close", "volume"),
+    }
 
     def ind(self, name: str, *args, **kwargs) -> list:
         """
@@ -62,13 +81,9 @@ class Context:
         key = f"{name}:{args}:{sorted(kwargs.items())}"
         if key in self.indicators:
             return self.indicators[key]
-        if name in self._OHLC:
-            series = ind.compute(name, self.high(), self.low(), self.close(),
-                                 *args, **kwargs)
-        elif name == "donchian":
-            series = ind.compute(name, self.high(), self.low(), *args, **kwargs)
-        else:
-            series = ind.compute(name, self.close(), *args, **kwargs)
+        inputs = self._INDICATOR_INPUTS.get(name, ("close",))
+        series = ind.compute(name, *[getattr(self, field)() for field in inputs],
+                             *args, **kwargs)
         self.indicators[key] = series
         return series
 
@@ -104,7 +119,8 @@ class Context:
         Done lazily so a strategy that trades patterns cannot silently return
         zero signals because nobody remembered to attach them.
         """
-        if not self.matches:
+        if not self.scanned:
+            self.scanned = True
             from knowledgebase import patterns as _pat
             for match in _pat.scan(self.bars):
                 self.matches.setdefault(match.index, []).append(match)
@@ -237,8 +253,11 @@ def pattern_entry(ctx: Context, i: int, patterns: Optional[List[str]] = None,
         if match.strength < require_strength:
             continue
         if direction == "any":
-            return 1 if match.direction == "bullish" else (
-                -1 if match.direction == "bearish" else 0)
+            if match.direction == "bullish":
+                return 1
+            if match.direction == "bearish":
+                return -1
+            continue
         if match.direction != direction:
             continue
         return 1 if direction == "bullish" else -1
@@ -259,7 +278,8 @@ def momentum_entry(ctx: Context, i: int, lookback: int = 10,
     net = ctx.bars[i].close - ctx.bars[i - lookback].close
     if net > 0 and ups >= up_bars:
         return 1 if mode == "follow" else -1
-    if net < 0 and ups <= (lookback - up_bars):
+    downs = len(window) - 1 - ups
+    if net < 0 and downs >= up_bars:
         return -1 if mode == "follow" else 1
     return 0
 

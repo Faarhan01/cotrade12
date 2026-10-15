@@ -3,7 +3,7 @@
 Modules in `core.application` and the HTTP/CLI transports depend on these
 interfaces, never on the concrete MT5 engine or SQLite store. Concrete
 adapters live in `gateway/cony/adapter.py` (MT5 side) and
-`core/database/repositories.py` (persistence side).
+`database/repositories.py` (persistence side).
 """
 
 from __future__ import annotations

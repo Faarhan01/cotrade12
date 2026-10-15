@@ -15,7 +15,7 @@ from core.application.ports import (
     PatternHitRepository,
     ConnectionPort,
 )
-from core.database import repositories as _repos
+from database import repositories as _repos
 
 
 @dataclass

@@ -65,7 +65,7 @@ def cmd_server(args):
 
 def cmd_db(args):
     """Inspect the SQLite database stats and verify integrity."""
-    from core.database.store import Store
+    from database.store import Store
     with Store() as store:
         print("Database stats:")
         for k, v in store.stats().items():

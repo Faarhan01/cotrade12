@@ -499,3 +499,72 @@ def describe() -> Dict[str, str]:
         "fvg_bullish": "Untraded bullish liquidity gap between bar i-2 high and bar i low.",
         "fvg_bearish": "Untraded bearish liquidity gap between bar i-2 low and bar i high.",
     }
+
+
+def _bar_body(b: Bar) -> float:
+    return abs(b.close - b.open)
+
+
+def _abandoned_baby(bars: List[Bar], i: int, max_body_ratio: float = 0.15) -> Optional[PatternMatch]:
+    if i < 2 or i >= len(bars):
+        return None
+    b0, b1, b2 = bars[i - 2], bars[i - 1], bars[i]
+    b0_red = b0.close < b0.open
+    b2_green = b2.close > b2.open
+    tiny = (_bar_body(b1) <= max(max(b1.high - b1.low, 1e-12) * max_body_ratio, 1e-12))
+    if not (b0_red and b2_green and tiny):
+        return None
+    return PatternMatch("abandoned_baby", i, "bullish", 1.0,
+                      "Isolated doji sandwiched by opposite candles",
+                      {"gap": True})
+
+
+def _three_line_strike(bars: List[Bar], i: int) -> Optional[PatternMatch]:
+    if i < 3 or i >= len(bars):
+        return None
+    a, b, c, d = bars[i - 3], bars[i - 2], bars[i - 1], bars[i]
+    three_bull = a.close < a.open and b.close < b.open and c.close < c.open
+    strong = d.close > d.open and d.close > a.open
+    bears = a.close > a.open and b.close > b.open and c.close > c.open
+    strong_fade = d.close < d.open and d.close < a.open
+    if three_bull and strong:
+        return PatternMatch("three_line_strike", i, "bullish", 1.0, "Three red candles followed by a strong green candle")
+    if bears and strong_fade:
+        return PatternMatch("three_line_strike", i, "bearish", 1.0, "Three green candles followed by a strong red candle")
+    return None
+
+
+def _tasuki_gap(bars: List[Bar], i: int) -> Optional[PatternMatch]:
+    if i < 2 or i >= len(bars):
+        return None
+    a, b, c = bars[i - 2], bars[i - 1], bars[i]
+    if a.close >= a.open and b.close > b.open and c.close < c.open:
+        return PatternMatch("tasuki_gap", i, "bearish", 0.7, "Upward gap partially closed by a down candle")
+    if a.close <= a.open and b.close < b.open and c.close > c.open:
+        return PatternMatch("tasuki_gap", i, "bullish", 0.7, "Downward gap partially closed by an up candle")
+    return None
+
+
+def _mat_hold(bars: List[Bar], i: int) -> Optional[PatternMatch]:
+    if i < 4 or i >= len(bars):
+        return None
+    b0, b1, b2, b3, b4 = bars[i - 4], bars[i - 3], bars[i - 2], bars[i - 1], bars[i]
+    first_up = b0.close > b0.open
+    middle_small = all(bb.close <= bb.open for bb in (b1, b2, b3))
+    finish_up = b4.close > b4.open and b4.close > b0.open
+    if first_up and middle_small and finish_up:
+        return PatternMatch("mat_hold", i, "bullish", 0.75, "Mat hold after a rally")
+    return None
+
+CANDLESTICK.update({
+    "abandoned_baby": _abandoned_baby,
+    "three_line_strike": _three_line_strike,
+    "tasuki_gap": _tasuki_gap,
+    "mat_hold": _mat_hold,
+})
+REGISTRY.update({
+    "abandoned_baby": _abandoned_baby,
+    "three_line_strike": _three_line_strike,
+    "tasuki_gap": _tasuki_gap,
+    "mat_hold": _mat_hold,
+})

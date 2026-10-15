@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from core.database.store import Store
+from database.store import Store
 
 
 def _store() -> Store:
@@ -13,6 +13,9 @@ def _store() -> Store:
 
 
 class SqliteStrategyRepository:
+    def __init__(self, config=None):
+        self.config = config
+
     def load(self, name: str):
         with _store() as s:
             return s.load_strategy(name)
@@ -31,6 +34,9 @@ class SqliteStrategyRepository:
 
 
 class SqliteReportRepository:
+    def __init__(self, config=None):
+        self.config = config
+
     def save(self, report: Dict[str, Any]) -> int:
         with _store() as s:
             return s.save_report(report)
@@ -46,6 +52,9 @@ class SqliteReportRepository:
 
 
 class SqlitePatternHitRepository:
+    def __init__(self, config=None):
+        self.config = config
+
     def save_hits(self, run_id: str, symbol: str, timeframe: str,
                   hits: List[Dict[str, Any]]) -> int:
         with _store() as s:

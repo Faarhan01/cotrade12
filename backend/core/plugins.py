@@ -7,6 +7,8 @@ each failure is logged with its traceback by the caller.
 from __future__ import annotations
 
 import logging
+
+from core.config import GatewayConfig
 import os
 import traceback
 
@@ -70,8 +72,9 @@ def register_all(router, engine, base, container=None) -> list:
                         ", ".join(_assets.available_pages()) or "none")
             results.append(("dashboard", added, None))
         else:
-            _frontend_hint = (os.environ.get("CONY_FRONTEND_DIR")
-                              or os.path.join(os.path.dirname(_ROOT_PLACEHOLDER()), "frontend"))
+            _frontend_hint = (
+                GatewayConfig.from_env().frontend_dir
+                or os.path.join(os.path.dirname(_ROOT_PLACEHOLDER()), "frontend"))
             logger.warning("dashboard unavailable - no pages found under %s", _frontend_hint)
             results.append(("dashboard", 0, "no pages found"))
     except Exception:  # noqa: BLE001

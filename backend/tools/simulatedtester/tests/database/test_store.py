@@ -1,11 +1,10 @@
 import os, sys, tempfile
 
-repo = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-backend = os.path.join(repo, "backend")
+backend = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 if backend not in sys.path:
     sys.path.insert(0, backend)
 
-from core.database.store import Store
+from database.store import Store
 
 
 def test_store_migrates_on_construction():

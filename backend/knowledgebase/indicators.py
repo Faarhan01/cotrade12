@@ -173,7 +173,6 @@ def macd(values: Sequence[float], fast: int = 12, slow: int = 26,
     signal_line: Series = [None] * len(data)
     histogram: Series = [None] * len(data)
     if len(defined) >= signal:
-        offset = defined[0]
         raw = [macd_line[i] for i in defined]
         sig = ema(raw, signal)
         for idx, i in enumerate(defined):
@@ -372,3 +371,168 @@ def compute(name: str, *args, **kwargs):
         raise KeyError(f"Unknown indicator '{name}'. Known: {sorted(REGISTRY)}")
     return REGISTRY[name](*args, **kwargs)
 
+
+
+def obv(close: Sequence[float], volume: Sequence[float]) -> Series:
+    """On-Balance Volume."""
+    c, v = _clean(close), _clean(volume)
+    n = len(c)
+    out: Series = [0.0] * n
+    s = 0.0
+    for i in range(1, n):
+        if c[i] > c[i - 1]:
+            s += v[i]
+        elif c[i] < c[i - 1]:
+            s -= v[i]
+        out[i] = s
+    return out
+
+
+def cmf(high: Sequence[float], low: Sequence[float], close: Sequence[float],
+        volume: Sequence[float], period: int = 20) -> Series:
+    """Chaikin Money Flow."""
+    if period <= 0:
+        raise ValueError("period must be positive")
+    h, l, c, vol = _clean(high), _clean(low), _clean(close), _clean(volume)
+    n = len(c)
+    out: Series = [None] * n
+    mfv = []
+    for i in range(n):
+        rng = max(h[i] - l[i], 1e-12)
+        multiplier = ((c[i] - l[i]) - (h[i] - c[i])) / rng
+        mfv.append(multiplier * max(vol[i], 0.0))
+    for i in range(period - 1, n):
+        numerator = sum(mfv[i - period + 1:i + 1])
+        denominator = sum(vol[i - period + 1:i + 1]) or 1.0
+        out[i] = numerator / denominator
+    return out
+
+
+def parabolic_sar(high: Sequence[float], low: Sequence[float],
+                  step: float = 0.02, max_step: float = 0.2) -> Series:
+    """Parabolic SAR."""
+    h, l = _clean(high), _clean(low)
+    n = len(h)
+    out: Series = [None] * n
+    if n < 2:
+        return out
+    uptrend = h[1] >= h[0]
+    sar = l[0] if uptrend else h[0]
+    ep = h[1] if uptrend else l[1]
+    af = step
+    for i in range(1, n):
+        if uptrend:
+            sar = sar + af * (ep - sar)
+            if sar > min(l[i - 1], l[i]):
+                sar = min(l[i - 1], l[i])
+            if h[i] > ep:
+                ep = h[i]
+                af = min(max_step, af + step)
+            if l[i] < sar:
+                uptrend = False
+                sar = ep
+                ep = l[i]
+                af = step
+        else:
+            sar = sar + af * (ep - sar)
+            if sar < max(h[i - 1], h[i]):
+                sar = max(h[i - 1], h[i])
+            if l[i] < ep:
+                ep = l[i]
+                af = min(max_step, af + step)
+            if h[i] > sar:
+                uptrend = True
+                sar = ep
+                ep = h[i]
+                af = step
+        out[i] = sar
+    out[0] = sar
+    return out
+
+
+def supertrend(high: Sequence[float], low: Sequence[float],
+               close: Sequence[float], period: int = 10,
+               multiplier: float = 3.0) -> Tuple[Series, Series]:
+    """Return (supertrend values, direction) where direction is +1/-1."""
+    tr = list(true_range(high, low, close))
+    atr_values = atr(high, low, close, period)
+    h, l, c = _clean(high), _clean(low), _clean(close)
+    n = len(c)
+    upper = [None] * n
+    lower = [None] * n
+    direction = [1] * n
+    final = [None] * n
+    for i in range(n):
+        if tr[i] is None:
+            continue
+        hl2 = (h[i] + l[i]) / 2.0
+        if atr_values[i] is not None:
+            upper[i] = hl2 + multiplier * atr_values[i]
+            lower[i] = hl2 - multiplier * atr_values[i]
+    for i in range(period, n):
+        if lower[i] is None or upper[i] is None:
+            final[i] = final[i - 1]
+            continue
+        if lower[i] < lower[i - 1] and c[i - 1] < lower[i - 1]:
+            lower[i] = lower[i - 1]
+        if upper[i] > upper[i - 1] and c[i - 1] > upper[i - 1]:
+            upper[i] = upper[i - 1]
+        if c[i] <= lower[i]:
+            direction[i] = -1
+            final[i] = upper[i]
+        else:
+            direction[i] = 1
+            final[i] = lower[i]
+    return final, [float(x) for x in direction]
+
+
+def keltner_channels(high: Sequence[float], low: Sequence[float],
+                     close: Sequence[float], period: int = 20,
+                     multiplier: float = 2.0) -> Tuple[Series, Series, Series]:
+    """Return lower/middle/upper Keltner channels."""
+    ema_mid = ema(close, period)
+    atr_values = atr(high, low, close, period)
+    n = len(close)
+    lower: Series = [None] * n
+    middle: Series = [x for x in ema_mid]
+    upper: Series = [None] * n
+    for i in range(n):
+        if middle[i] is not None and atr_values[i] is not None:
+            lower[i] = middle[i] - multiplier * atr_values[i]
+            upper[i] = middle[i] + multiplier * atr_values[i]
+    return lower, middle, upper
+
+
+def ichimoku(high: Sequence[float], low: Sequence[float],
+             close: Sequence[float]) -> Tuple[Series, Series, Series, Series]:
+    """Return tenkan, kijun, senkou A, and senkou B."""
+    def _span(period):
+        out = [None] * len(close)
+        for i in range(period - 1, len(close)):
+            window_high = max(high[i - period + 1:i + 1])
+            window_low = min(low[i - period + 1:i + 1])
+            out[i] = (window_high + window_low) / 2.0
+        return out
+
+    tenkan = _span(9)
+    kijun = _span(26)
+    senkou_a = [None] * len(close)
+    senkou_b = [None] * len(close)
+    for i in range(25, len(close)):
+        if tenkan[i - 25] is not None and kijun[i - 25] is not None:
+            senkou_a[i] = (tenkan[i - 25] + kijun[i - 25]) / 2.0
+    span_52 = _span(52)
+    for i in range(51, len(close)):
+        if span_52[i - 25] is not None:
+            senkou_b[i] = span_52[i - 25]
+    return tenkan, kijun, senkou_a, senkou_b
+
+
+REGISTRY.update({
+    "obv": obv,
+    "cmf": cmf,
+    "parabolic_sar": parabolic_sar,
+    "supertrend": supertrend,
+    "keltner": keltner_channels,
+    "ichimoku": ichimoku,
+})

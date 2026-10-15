@@ -15,17 +15,15 @@ what turns "we made money on this" into something reproducible months later.
 """
 
 import argparse
-import json
 import os
 import sys
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))))
 
-from core.database import Store                                  # noqa: E402
-from core.database.store import new_run_id                       # noqa: E402
-from knowledgebase import indicators as kind                # noqa: E402
+from database import Store                                  # noqa: E402
+from database.store import new_run_id                       # noqa: E402
 from knowledgebase import patterns as kpatterns             # noqa: E402
 from knowledgebase import strategies as kstrategies         # noqa: E402
 from tools.bot import datafeed, engine, patternchecker      # noqa: E402
@@ -156,7 +154,7 @@ def cmd_sweep(args) -> int:
             "profit_factor": record["profit_factor"],
             "net_points": record["net_points"],
             "gross_points": record["gross_points"],
-            "spread_cost": record["trades"] * 2 * inst["spread_pips"] * (inst["pip"] or 1),
+            "spread_cost": record["trades"] * inst["spread_pips"] * (inst["pip"] or 1),
             "max_drawdown": record["max_drawdown"],
             "expectancy": record["expectancy"],
             "t_statistic": record["t_statistic"],
@@ -241,7 +239,8 @@ def cmd_report(args) -> int:
                       "tp/sl%", "net pips", "t", "verdict"],
                      [[r["strategy_name"], r["symbol"], r["trades"], r["resolved"],
                        f"{r['win_rate']:.1f}%" if r["win_rate"] is not None else "-",
-                       f"{r['resolved_win_rate']:.1f}%" if r["resolved_win_rate"] is not None else "-",
+                       (f"{r['resolved_win_rate']:.1f}%"
+                        if r["resolved_win_rate"] is not None else "-"),
                        f"{r['net_points'] / (r.get('pip') or 1.0):+.1f}",
                        f"{r['t_statistic']:+.2f}" if r["t_statistic"] is not None else "-",
                        r["verdict"]] for r in rows])

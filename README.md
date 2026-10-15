@@ -26,7 +26,7 @@ python run.py server --open
 # Inspect SQLite database statistics and verify integrity
 python run.py db
 
-# Print directory of all 73 active API & UI endpoints
+# Print directory of all 99 active API & UI endpoints
 python run.py routes
 ```
 
@@ -64,5 +64,19 @@ python run.py bot scan EURUSD
 
 - **Backend**: Pure Python HTTP server with SSE event streaming (`/stream/portfolio`, `/stream/ticks`). Zero npm dependencies needed at runtime.
 - **Frontend**: Plain Vanilla HTML, CSS, and modern JavaScript in `frontend/`. No build step or bundler needed.
-- **Database**: Embedded SQLite in `backend/db/data/peron.db` running in WAL mode with auto-indexing.
+- **Database**: Embedded SQLite in `backend/database/data/peron.db` running in WAL mode with auto-indexing.
 - **Gateway**: Decoupled 3-layer architecture (`deamon` → `server` → `cony`).
+
+## Environment variables
+- `PERON_DB` / `CONY_DB_PATH` — SQLite database path.
+- `CONY_MT5_PACKAGE` / `MT5_PACKAGE_PATH` — installed MetaTrader5 package location.
+- `PORT` / `HOST` / `CONY_PORT` / `CONY_HOST` — listener selection.
+- `CONY_URL` — explicit gateway base URL.
+- `CONY_FRONTEND_DIR` — override frontend assets location.
+- `CONY_CORS_ORIGIN` — allowed browser Origin (default `*`).
+- `CONY_AUTO_CONNECT=false` — run without MT5 for UI development.
+
+## Development server
+```bash
+./dev-server.sh
+```

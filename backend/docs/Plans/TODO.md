@@ -268,7 +268,7 @@ endpoints are undocumented. Everything works; the document is just stale. The
 live list is always at `GET /routes`.
 
 ### 31. Project name has drifted from the code
-`backend/db/data/peron.db`, `PERON_PACKAGE_PATH`, the database filename, and the
+`backend/database/data/peron.db`, `PERON_PACKAGE_PATH`, the database filename, and the
 docs all predate the rename to cotrade. Pick one convention and apply it.
 
 ---

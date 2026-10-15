@@ -6,3 +6,12 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Python caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local SQLite
+backend/database/data/*.wal
+backend/database/data/*.shm
