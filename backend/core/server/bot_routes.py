@@ -118,6 +118,35 @@ def register(router, engine=None) -> int:
                 raise
             raise BadRequest(str(e))
 
+    @router.post("/bot/sessions/{session_id}/pause")
+    def pause_bot_session(params, query, body):
+        session_id = params["session_id"]
+        from core.database.store import Store
+        try:
+            with Store() as store:
+                store.update_bot_session(session_id, trades_count=0, pnl_pips=0.0,
+                                       status="paused", stopped=False)
+                return {"success": True, "session_id": session_id, "status": "paused"}
+        except Exception as e:  # noqa: BLE001
+            from core.server.errors import BadRequest, HTTPError
+            if isinstance(e, HTTPError):
+                raise
+            raise BadRequest(str(e))
+
+    @router.post("/bot/sessions/{session_id}/resume")
+    def resume_bot_session(params, query, body):
+        session_id = params["session_id"]
+        from core.database.store import Store
+        try:
+            with Store() as store:
+                store.update_bot_session(session_id, trades_count=0, pnl_pips=0.0,
+                                       status="running", stopped=False)
+                return {"success": True, "session_id": session_id, "status": "running"}
+        except Exception as e:  # noqa: BLE001
+            from core.server.errors import BadRequest, HTTPError
+            if isinstance(e, HTTPError): raise
+            raise BadRequest(str(e))
+
     @router.post("/bot/sessions/{session_id}/stop")
     def stop_bot_session(params, query, body):
         """Stop a running bot session."""

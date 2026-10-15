@@ -133,19 +133,19 @@ class RouteHandlers:
 
         @r.post("/connect")
         def connect(params, query, body):
-            info = engine._conn.connect(
+            info = engine.connect(
                 login=body.get("login"),
                 password=body.get("password"),
                 server=body.get("server"),
                 path=body.get("path"),
                 timeout=body.get("timeout"),
             )
-            engine._conn.start_auto_reconnect()
+            engine.start_auto_reconnect()
             return {"success": True, "connection": info}
 
         @r.post("/disconnect")
         def disconnect(params, query, body):
-            engine._conn.disconnect()
+            engine.disconnect()
             return {"success": True, "mt5_connected": False}
 
         @r.post("/login")

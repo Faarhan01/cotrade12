@@ -453,7 +453,29 @@ def check_and_store(symbol: str, timeframe: str = "M1", count: int = 3000,
                 "price": bar.close, "meta": context_meta,
             })
     
-    store.save_hits(rid, symbol, timeframe, payload)
+    hit_ids = store.save_hits(rid, symbol, timeframe, payload)
+
+    # Populate hit_context with indicator values captured per hit.
+    for hid, ctx in zip(hit_ids, context_payload):
+        ctx_meta = ctx.get("meta", {}) if isinstance(ctx, dict) else {}
+        for key, value in list(ctx_meta.items()):
+            if not key.startswith("ind_"):
+                continue
+            indicator = key[4:]
+            if isinstance(value, bool):
+                continue
+            if isinstance(value, (int, float)):
+                try:
+                    store.save_hit_context(hid, indicator, float(value))
+                except Exception:  # noqa: BLE001
+                    pass
+            elif isinstance(value, (list, tuple)):
+                for comp_i, comp_v in enumerate(value):
+                    if isinstance(comp_v, (int, float)) and not isinstance(comp_v, bool):
+                        try:
+                            store.save_hit_context(hid, f"{indicator}_{comp_i}", float(comp_v))
+                        except Exception:  # noqa: BLE001
+                            pass
     
     # Also save hit context if we have any
     if context_payload:
@@ -499,7 +521,7 @@ def main(argv=None):
                     "meta": m.meta} for m in report.matches]
         rid = new_run_id("scan")
         saved = store.save_hits(rid, args.symbol, args.timeframe, payload)
-        print(f"\nsaved {saved} hits as run {rid}", file=sys.stderr)
+        print(f"\nsaved {len(saved)} hits as run {rid}", file=sys.stderr)
     return 0
 
 

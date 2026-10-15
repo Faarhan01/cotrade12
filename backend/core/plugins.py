@@ -81,10 +81,10 @@ def register_all(router, engine, base, container=None) -> list:
     return results
 
 
+
+
 def _ROOT_PLACEHOLDER():
     # kept as a helper to avoid deeply nested dirname at module load; mirrors
     # handlers' previous location logic (repo root).
     from pathlib import Path
     return Path(__file__).resolve().parents[2]  # backend/core -> backend -> repo
-PYEOF
-echo created

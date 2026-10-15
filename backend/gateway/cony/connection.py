@@ -155,7 +155,9 @@ class ConnectionManager:
         failing, which keeps a caller from having to re-issue POST /connect
         after a terminal restart.
         """
-        if not self._connected:
+        with self._lock:
+            _connected = self._connected
+        if not _connected:
             if self._config.get("auto_reconnect", True):
                 self.connect()
             else:

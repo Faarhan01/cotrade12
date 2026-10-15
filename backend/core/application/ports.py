@@ -5,6 +5,7 @@ interfaces, never on the concrete MT5 engine or SQLite store. Concrete
 adapters live in `gateway/cony/adapter.py` (MT5 side) and
 `core/database/repositories.py` (persistence side).
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Protocol
@@ -15,8 +16,13 @@ from knowledgebase.strategies import Strategy
 
 class MarketDataPort(Protocol):
     def instrument(self, symbol: str) -> Dict[str, Any]: ...
-    def candles(self, symbol: str, timeframe: str, count: int,
-                days: Optional[int] = None) -> List[Bar]: ...
+    def candles(
+        self,
+        symbol: str,
+        timeframe: str,
+        count: int,
+        days: Optional[int] = None,
+    ) -> List[Bar]: ...
 
 
 class MT5Port(Protocol):
@@ -38,8 +44,9 @@ class TradingPort(Protocol):
     def send_order(self, request: Dict[str, Any]) -> Dict[str, Any]: ...
     def close_position(self, ticket: int, **kw: Any) -> Dict[str, Any]: ...
     def modify_position(self, ticket: int, **kw: Any) -> Dict[str, Any]: ...
-    def calc_size(self, symbol: str, risk_amount: float,
-                  stop_pips: float) -> Dict[str, Any]: ...
+    def calc_size(
+        self, symbol: str, risk_amount: float, stop_pips: float
+    ) -> Dict[str, Any]: ...
 
 
 class StrategyRepository(Protocol):
@@ -51,19 +58,33 @@ class StrategyRepository(Protocol):
 
 class ReportRepository(Protocol):
     def save(self, report: Dict[str, Any]) -> int: ...
-    def list(self, *, strategy: Optional[str] = None,
-             verdict: Optional[str] = None,
-             limit: int = 100) -> List[Dict[str, Any]]: ...
+    def list(
+        self,
+        *,
+        strategy: Optional[str] = None,
+        verdict: Optional[str] = None,
+        limit: int = 100,
+    ) -> List[Dict[str, Any]]: ...
     def best(self, limit: int = 20) -> List[Dict[str, Any]]: ...
 
 
 class PatternHitRepository(Protocol):
-    def save_hits(self, run_id: str, symbol: str, timeframe: str,
-                  hits: List[Dict[str, Any]]) -> int: ...
-    def query(self, pattern: Optional[str] = None,
-              symbol: Optional[str] = None,
-              limit: int = 500) -> List[Dict[str, Any]]: ...
-    def frequency(self, symbol: Optional[str] = None) -> List[Dict[str, Any]]: ...
+    def save_hits(
+        self,
+        run_id: str,
+        symbol: str,
+        timeframe: str,
+        hits: List[Dict[str, Any]],
+    ) -> int: ...
+    def query(
+        self,
+        pattern: Optional[str] = None,
+        symbol: Optional[str] = None,
+        limit: int = 500,
+    ) -> List[Dict[str, Any]]: ...
+    def frequency(
+        self, symbol: Optional[str] = None
+    ) -> List[Dict[str, Any]]: ...
 
 
 class ConnectionPort(Protocol):

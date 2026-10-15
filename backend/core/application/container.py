@@ -1,4 +1,5 @@
 """Composition objects for the application layer."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,16 +15,14 @@ from core.application.ports import (
     PatternHitRepository,
     ConnectionPort,
 )
+from core.database import repositories as _repos
 
 
 @dataclass
 class AppContainer:
-    """Wires infrastructure implementations to application services.
+    """Wires infrastructure implementations to application services."""
 
-    Constructed only by `core.composition.build_container`. Application code
-    and transports read from here instead of building their own dependencies.
-    """
-    config: Any  # GatewayConfig (kept as Any to avoid import cycle; typed by caller)
+    config: Any
     engine: MT5Port
     market_data: MarketDataPort
     account: AccountPort
@@ -36,29 +35,18 @@ class AppContainer:
     pattern_scan: Optional[Any] = None
     validation: Optional[Any] = None
     sizing: Optional[Any] = None
-    strategy_repo_concrete: Optional[Any] = None
 
 
 def build_container(config, engine) -> AppContainer:
-    """Temporary Stage-2 factory.
-
-    Services are wired in Stage 3 once concrete adapters exist for ports.
-    Today we hand the raw engine through the `MT5Port`/`AccountPort` etc.
-    contracts as adapters, since `MT5Engine` is structurally compatible with
-    (a superset of) those protocols. The `engine` is expected to be a
-    `cony.MT5Engine` instance.
-    """
-    from core.database import repositories as _repos
-
-    store = _repos.SqliteStoreHandle(config) if hasattr(_repos, "SqliteStoreHandle") else None
-
+    # Stage 2/5 factory. Services below can be filled in later without
+    # changing the container shape.
     return AppContainer(
         config=config,
-        engine=engine,                 # type: ignore[arg-type]
-        market_data=engine,             # type: ignore[arg-type]
-        account=engine,                 # type: ignore[arg-type]
-        trading=engine,                # type: ignore[arg-type]
-        connection=engine,             # type: ignore[arg-type]
+        engine=engine,
+        market_data=engine,
+        account=engine,
+        trading=engine,
+        connection=engine,
         strategy_repo=_repos.SqliteStrategyRepository(config),
         report_repo=_repos.SqliteReportRepository(config),
         pattern_hit_repo=_repos.SqlitePatternHitRepository(config),

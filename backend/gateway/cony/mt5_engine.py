@@ -83,6 +83,18 @@ class MT5Engine:
     def market_book(self) -> MarketBook:
         return self._book
 
+    def connect(self, **overrides) -> dict:
+        """Attach to a terminal (delegates to the connection manager)."""
+        info = self._conn.connect(**overrides)
+        return info
+
+    def disconnect(self) -> None:
+        """Detach from the terminal."""
+        self._conn.disconnect()
+
+    def start_auto_reconnect(self, interval: int = 20) -> None:
+        self._conn.start_auto_reconnect(interval)
+
     def ensure_connected(self):
         self._conn.ensure_connected()
 

@@ -15,24 +15,41 @@ from typing import Optional
 
 from cony.paths import find_mt5_package
 
+import time
+
 _mt5 = None
 _loaded = False
+_last_attempt = 0.0
+_RETRY_INTERVAL = 30.0
 
 
 def load() -> Optional[object]:
-    """Import and cache the MetaTrader5 module, or None if unavailable."""
-    global _mt5, _loaded
-    if not _loaded:
-        _loaded = True
-        path = find_mt5_package()
-        if path and path not in sys.path:
-            sys.path.insert(0, path)
-        try:
-            import MetaTrader5 as module
+    """Import and cache the MetaTrader5 module, or None if unavailable.
 
-            _mt5 = module
-        except ImportError:
-            _mt5 = None
+    A failed import is *not* cached forever: the module is retried after
+    ``_RETRY_INTERVAL`` seconds so that a gateway which started before the
+    terminal/package was available can pick it up later. Constants are still
+    derived from whatever `load()` returns at *module import time*, so callers
+    that need fresh values should call `load()` directly.
+    """
+    global _mt5, _loaded, _last_attempt
+    now = time.monotonic()
+    if _loaded and _mt5 is not None:
+        return _mt5
+    if _loaded and (_mt5 is None) and (now - _last_attempt < _RETRY_INTERVAL):
+        return None
+    _last_attempt = now
+    path = find_mt5_package()
+    if path and path not in sys.path:
+        sys.path.insert(0, path)
+    try:
+        import MetaTrader5 as module
+    except ImportError:
+        _mt5 = None
+        _loaded = True
+        return None
+    _mt5 = module
+    _loaded = True
     return _mt5
 
 

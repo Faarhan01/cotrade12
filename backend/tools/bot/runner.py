@@ -207,7 +207,8 @@ def cmd_scan(args) -> int:
                     "time": report.bars[m.index].time, "direction": m.direction,
                     "strength": m.strength, "price": report.bars[m.index].close,
                     "meta": m.meta} for m in report.matches]
-        n = store.save_hits(rid, args.symbol, args.timeframe, payload)
+        saved = store.save_hits(rid, args.symbol, args.timeframe, payload)
+        n = len(saved)
         print(f"\nsaved {n} hits as run {rid}")
     store.close()
     return 0

@@ -1,5 +1,8 @@
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+import os, sys
+repo = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+backend = os.path.join(repo, "backend")
+if backend not in sys.path:
+    sys.path.insert(0, backend)
 
 from knowledgebase import indicators
 

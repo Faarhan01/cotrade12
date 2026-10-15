@@ -1,3 +1,19 @@
+<!-- Verification pass: 2026-10-16 -->
+<!-- The following items are already implemented in the codebase as of this pass:
+     1. Frontend utils.js escapeHtml (fixed via runtime entity map).
+     2. shell.js clock bug (fmtLib fallback + global.fmt).
+     3. shell.start() present in dashboard/symbols/research/bot/history pages.
+     4. Research & bot & db endpoints already registered (95 routes); see
+        run.py routes. Includes /research/reports/{run_id}, DELETE strategy,
+        /research/strategy/{name}/optimize, /research/patterns/cooccurrence,
+        /research/hits/context, /research/bars/range, /research/reports/best,
+        /bot/sessions/{id}/stream.
+     5. Pause/resume bot session endpoints added.
+     6. Pattern hit context population implemented (hit_context).
+     7. Extra DB indexes added to schema.py.
+     8. Frontend components library integrated into pages.
+-->
+
 # Unfinished Work & Future Improvements Plan
 
 ## Overview

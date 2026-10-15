@@ -49,6 +49,7 @@ SCHEMA: List[str] = [
     """,
 
     "CREATE INDEX IF NOT EXISTS idx_strategy_versions_strategy ON strategy_versions(strategy_id)",
+    "CREATE INDEX IF NOT EXISTS idx_strategy_versions_name ON strategy_versions(strategy_id, version)",
 
     # ── Indicator reference ───────────────────────────────────────────
     """
@@ -209,8 +210,10 @@ SCHEMA: List[str] = [
     "CREATE INDEX IF NOT EXISTS idx_reports_strategy ON reports(strategy_name)",
     "CREATE INDEX IF NOT EXISTS idx_reports_run      ON reports(run_id)",
     "CREATE INDEX IF NOT EXISTS idx_reports_verdict  ON reports(verdict)",
+    "CREATE INDEX IF NOT EXISTS idx_reports_symbol_tf ON reports(symbol, timeframe)",
     "CREATE INDEX IF NOT EXISTS idx_hits_pattern     ON pattern_hits(pattern)",
     "CREATE INDEX IF NOT EXISTS idx_hits_symbol      ON pattern_hits(symbol, timeframe)",
+    "CREATE INDEX IF NOT EXISTS idx_hits_symbol_tf_time ON pattern_hits(symbol, timeframe, bar_time)",
     "CREATE INDEX IF NOT EXISTS idx_hits_time        ON pattern_hits(bar_time)",
     "CREATE INDEX IF NOT EXISTS idx_trades_run       ON report_trades(run_id)",
     "CREATE INDEX IF NOT EXISTS idx_sessions_status  ON bot_sessions(status)",

@@ -300,7 +300,9 @@ class Store:
                 "bar_index, bar_time, direction, strength, price, meta) "
                 "VALUES (?,?,?,?,?,?,?,?,?,?)", rows)
             self._conn.commit()
-        return len(rows)
+            ids = [r[0] for r in self._conn.execute(
+                "SELECT id FROM pattern_hits WHERE run_id = ? ORDER BY id", (run_id,)).fetchall()]
+        return ids[-len(rows):] if rows else []
 
     def save_hit_context(self, hit_id: int, indicator: str, value: float) -> int:
         """Save indicator value at a pattern hit for context analysis."""
