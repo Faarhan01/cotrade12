@@ -5,7 +5,7 @@ Stores strategies, indicator and pattern reference data, backtest reports and
 pattern scan results.
 
     from database import Store
-    store = Store()            # backend/data/peron.db by default
+    store = Store()            # backend/db/data/peron.db by default
     store.migrate()
     store.save_strategy(plan)
 

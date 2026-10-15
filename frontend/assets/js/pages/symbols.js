@@ -310,4 +310,7 @@
       select(boot.default_symbol, first);
     }, 350);
   }
+  // Ensure fmt is available for shell.js clock
+  window.fmt = window.fmt || window.fmtLib || window.fmt;
+  window.shell.start(window.dom.bootstrap());
 })();

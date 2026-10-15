@@ -90,6 +90,12 @@ def _gateway_fetch(symbol: str, timeframe: str = "M1", count: int = 2000,
                 detail = ""
             if exc.code == 404:
                 raise NotFound(detail or f"No data for '{symbol}'") from exc
+            # MT5 connection issues return 503 from the gateway
+            if exc.code == 503:
+                raise UpstreamUnavailable(detail or "MT5 not connected") from exc
+            # MT5 connection issues may also return 400 with MT5 error message
+            if exc.code == 400 and "MetaTrader5" in detail:
+                raise UpstreamUnavailable(f"MT5 not connected: {detail}") from exc
             raise BadRequest(detail or f"Upstream returned {exc.code}") from exc
         except urllib.error.URLError as exc:
             raise UpstreamUnavailable(
@@ -265,6 +271,11 @@ def register(router, engine, base: Optional[str] = None):
 
     @router.post("/research/strategy/validate")
     def validate_strategy(params, query, body):
+        # Accept either a full strategy object or {"strategy_name": "..."} wrapper
+        # The gateway only accepts JSON objects, so we use a wrapper for string lookup
+        if isinstance(body, dict) and "strategy_name" in body and "name" not in body:
+            # Convert {"strategy_name": "..."} to string for validate_strategy
+            return research.validate_strategy(body["strategy_name"])
         return research.validate_strategy(body or {})
 
     @router.post("/research/strategy/save")
@@ -502,5 +513,183 @@ def register(router, engine, base: Optional[str] = None):
                 return {"imported": imported, "count": len(imported)}
         except Exception as e:
             return {"error": str(e)}
+
+
+    @router.get("/research/reports/{run_id}")
+    def get_report(params, query, body):
+        """Get a single backtest report by run_id."""
+        from database.store import Store
+        run_id = params["run_id"]
+        try:
+            with Store() as store:
+                reports = store.reports(limit=1)
+                # Filter by run_id
+                for r in reports:
+                    if r.get("run_id") == run_id:
+                        return r
+                raise NotFound(f"No report with run_id '{run_id}'")
+        except NotFound:
+            raise
+        except Exception as e:
+            return {"error": str(e)}
+
+    @router.delete("/research/strategy/{name}")
+    def delete_strategy(params, query, body):
+        """Delete a stored strategy."""
+        from database.store import Store
+        name = params["name"]
+        try:
+            with Store() as store:
+                deleted = store.delete_strategy(name)
+                if not deleted:
+                    raise NotFound(f"No stored strategy named '{name}'")
+                return {"success": True, "deleted": name}
+        except NotFound:
+            raise
+        except Exception as e:
+            return {"error": str(e)}
+
+    @router.get("/research/strategy/{name}/performance")
+    def strategy_performance(params, query, body):
+        """Get performance history for a strategy across all reports."""
+        from database.store import Store
+        name = params["name"]
+        limit = int(query.get("limit", 50))
+        try:
+            with Store() as store:
+                reports = store.reports(strategy=name, limit=limit)
+                # Extract key metrics for charting
+                performance = []
+                for r in reports:
+                    performance.append({
+                        "run_id": r.get("run_id"),
+                        "symbol": r.get("symbol"),
+                        "timeframe": r.get("timeframe"),
+                        "trades": r.get("trades"),
+                        "resolved": r.get("resolved"),
+                        "win_rate": r.get("win_rate"),
+                        "resolved_win_rate": r.get("resolved_win_rate"),
+                        "profit_factor": r.get("profit_factor"),
+                        "net_pips": r.get("net_pips"),
+                        "t_statistic": r.get("t_statistic"),
+                        "verdict": r.get("verdict"),
+                        "created": r.get("created"),
+                    })
+                return {"strategy": name, "count": len(performance), "performance": performance}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @router.get("/research/patterns/cooccurrence")
+    def pattern_cooccurrence(params, query, body):
+        """Get pattern co-occurrence analysis."""
+        from database.store import Store
+        symbol = query.get("symbol")
+        timeframe = query.get("timeframe", "M1")
+        limit = int(query.get("limit", 1000))
+        try:
+            with Store() as store:
+                hits = store.hits(symbol=symbol, limit=limit)
+                # Filter by timeframe
+                hits = [h for h in hits if h.get("timeframe") == timeframe]
+                # Count co-occurrences (patterns within N bars of each other)
+                # Simplified: just return pattern pair frequencies
+                from collections import Counter
+                cooccur = Counter()
+                for i, h1 in enumerate(hits):
+                    for h2 in hits[i+1:i+10]:  # Check next 10 hits
+                        if h2["pattern"] != h1["pattern"]:
+                            pair = tuple(sorted([h1["pattern"], h2["pattern"]]))
+                            cooccur[pair] += 1
+                return {
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "total_hits": len(hits),
+                    "cooccurrences": [{"patterns": list(p), "count": c} for p, c in cooccur.most_common(20)]
+                }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @router.post("/research/strategy/{name}/optimize")
+    def optimize_strategy(params, query, body):
+        """Optimize strategy parameters using grid search."""
+        body = body or {}
+        name = params["name"]
+        param_grid = body.get("param_grid") or {}
+        symbol = body.get("symbol")
+        timeframe = body.get("timeframe", "M1")
+        count = int(body.get("count", 4000))
+        metric = body.get("metric", "t_statistic")  # or "net_pips", "profit_factor"
+
+        if not symbol:
+            raise BadRequest("'symbol' is required")
+        if not param_grid:
+            raise BadRequest("'param_grid' is required")
+
+        try:
+            from knowledgebase import strategies as kstrategies
+            from tools.bot import datafeed
+            from tools.bot.engine import run
+
+            stored = research.get_strategy(name)
+            if not stored:
+                raise NotFound(f"No stored strategy named '{name}'")
+            base_plan = kstrategies.Strategy.from_dict(stored)
+
+            # Generate parameter combinations
+            import itertools
+            param_names = list(param_grid.keys())
+            param_values = list(param_grid.values())
+            combinations = list(itertools.product(*param_values))
+
+            bars = research.bars(symbol, timeframe, count)
+            if not bars:
+                raise UpstreamUnavailable(f"No bars returned for {symbol} - MT5 may not be connected")
+            inst = datafeed.instrument(symbol)
+
+            results = []
+            for combo in combinations[:100]:  # Limit to 100 combinations
+                plan = kstrategies.Strategy.from_dict(stored)
+                params = dict(zip(param_names, combo))
+                for k, v in params.items():
+                    if hasattr(plan, k):
+                        setattr(plan, k, v)
+                    elif hasattr(plan.entry_rule, k):
+                        setattr(plan.entry_rule, k, v)
+                    elif hasattr(plan.exit_rule, k):
+                        setattr(plan.entry_rule, k, v)
+                    elif hasattr(plan.sizing, k):
+                        setattr(plan.sizing, k, v)
+
+                result = run(plan, bars, inst, warmup=60)
+                report = result.to_dict()
+                metric_value = report.get(metric)
+                if metric_value is not None:
+                    results.append({**params, metric: metric_value, "verdict": report.get("verdict")})
+
+            results.sort(key=lambda x: x.get(metric, 0), reverse=True)
+            return {
+                "strategy": name,
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "metric": metric,
+                "tested": len(results),
+                "best": results[:10] if results else [],
+            }
+        except UpstreamUnavailable:
+            raise
+        except Exception as e:
+            return {"error": str(e)}
+
+    @router.get("/bot/sessions/{session_id}/stream")
+    def bot_session_stream(params, query, body):
+        """SSE stream for real-time bot session updates."""
+        # This would need proper SSE implementation
+        # For now return info about the stream
+        session_id = params["session_id"]
+        return {
+            "session_id": session_id,
+            "stream_url": f"/bot/sessions/{session_id}/stream",
+            "note": "SSE endpoint not yet implemented - use polling on /bot/sessions/{id}"
+        }
 
     return len(router.list_routes()) - before

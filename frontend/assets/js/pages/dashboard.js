@@ -23,6 +23,8 @@
 
   // Shared header/footer painting now lives in lib/shell.js, so every page
   // has the same live status and clock rather than only this one.
+  // Expose fmt globally for shell.js clock
+  window.fmt = window.fmt || window.fmtLib || window.fmt;
   window.shell.start(boot);
 
   var paintStatus = window.shell.paintStatus;

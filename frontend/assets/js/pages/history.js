@@ -150,4 +150,7 @@
   // Load a recent window once, so the page is not empty on arrival. The
   // backend applies its own default when neither date is supplied.
   load();
+  // Ensure fmt is available for shell.js clock
+  window.fmt = window.fmt || window.fmtLib || window.fmt;
+  window.shell.start(window.dom.bootstrap());
 })();

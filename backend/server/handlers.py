@@ -15,7 +15,7 @@ import os
 import traceback
 
 from server import validation as v
-from server.errors import BadRequest
+from server.errors import BadRequest, UpstreamUnavailable, NotFound
 from server.routes import Router
 from cony import enums
 from cony.mt5_engine import MT5Engine
@@ -316,7 +316,10 @@ class RouteHandlers:
                             "narrowed %s %s window to %d bars",
                             name, tf, v.MAX_CANDLES,
                         )
-                bars = engine.copy_rates_range(name, tf, start, end)
+                try:
+                    bars = engine.copy_rates_range(name, tf, start, end)
+                except MT5ConnectionError as exc:
+                    raise UpstreamUnavailable(f"MT5 not connected: {exc}") from exc
             elif query.get("start") is not None:
                 offset = v.integer(query["start"], "start", minimum=0, maximum=v.MAX_CANDLES)
                 count = v.integer(query.get("count", 100), "count",

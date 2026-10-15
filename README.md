@@ -64,5 +64,5 @@ python run.py bot scan EURUSD
 
 - **Backend**: Pure Python HTTP server with SSE event streaming (`/stream/portfolio`, `/stream/ticks`). Zero npm dependencies needed at runtime.
 - **Frontend**: Plain Vanilla HTML, CSS, and modern JavaScript in `frontend/`. No build step or bundler needed.
-- **Database**: Embedded SQLite in `backend/data/peron.db` running in WAL mode with auto-indexing.
+- **Database**: Embedded SQLite in `backend/db/data/peron.db` running in WAL mode with auto-indexing.
 - **Gateway**: Decoupled 3-layer architecture (`deamon` → `server` → `cony`).

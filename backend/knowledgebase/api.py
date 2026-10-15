@@ -264,7 +264,23 @@ class Research:
 
         Returns the normalised spec on success so a caller can store exactly
         what will be run.
+
+        Accepts either:
+        - A full strategy definition dict (with name, entry_name, etc.)
+        - A string naming a stored strategy (looked up in the database)
         """
+        # If it's a string, look up the stored strategy
+        if isinstance(spec, str):
+            if self._store is None:
+                return {"valid": False, "problems": ["no database attached to resolve stored strategy"]}
+            stored = self.get_strategy(spec)
+            if not stored:
+                return {"valid": False, "problems": [f"no stored strategy named '{spec}'"]}
+            spec = stored
+
+        if not isinstance(spec, dict):
+            return {"valid": False, "problems": ["strategy must be an object or a stored strategy name"]}
+
         problems = []
         if not spec.get("name"):
             problems.append("'name' is required")
@@ -288,15 +304,6 @@ class Research:
                     "exit_rule needs at least one of take_profit, stop_loss, "
                     "trailing_stop or time_stop_bars, or positions never close")
             tp, sl = exit_rule.get("take_profit"), exit_rule.get("stop_loss")
-            # Parenthesised deliberately. Written as
-            #   `tp and sl and tp <= 0 or sl and sl <= 0`
-            # Python binds `and` tighter than `or`, so that parsed as
-            # `(tp and sl and tp <= 0) or (sl and sl <= 0)` - the take-profit
-            # check was gated on a stop-loss also being present, and a
-            # definition with a negative take-profit and no stop-loss was
-            # accepted. The engine then places that take-profit *below* entry
-            # on a long and books the loss as a resolved "take_profit", which
-            # corrupts the resolved ratio every verdict is built on.
             if (tp and tp <= 0) or (sl and sl <= 0):
                 problems.append("take_profit and stop_loss must be positive")
 

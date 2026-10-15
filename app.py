@@ -10,9 +10,10 @@ import sys
 
 _root = os.path.dirname(os.path.abspath(__file__))
 _backend = os.path.join(_root, "backend")
+_db = os.path.join(_backend, "db")
 _gateway = os.path.join(_backend, "gateway")
 
-for _d in (_root, _backend, _gateway):
+for _d in (_root, _backend, _db, _gateway):
     if _d not in sys.path:
         sys.path.insert(0, _d)
 

@@ -55,8 +55,10 @@
 
   function startClock(boot) {
     var clockOffset = Number(boot.clock_offset) || 0;
+    var fmtLib = global.fmt || global.fmtLib; // Support both naming conventions
     function tick() {
-      setRole("clock", fmt ? fmt.clockOnly(clockOffset) + " UTC" : "");
+      var clock = fmtLib ? fmtLib.clockOnly(clockOffset) + " UTC" : "";
+      setRole("clock", clock);
     }
     tick();
     global.setInterval(tick, 1000);

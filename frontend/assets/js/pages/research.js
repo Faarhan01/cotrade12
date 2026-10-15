@@ -12,6 +12,8 @@
 
   var boot = dom.bootstrap();
   var clockOffset = Number(boot.clock_offset) || 0;
+  // Ensure fmt is available for shell.js clock
+  window.fmt = window.fmt || window.fmtLib || window.fmt;
   window.shell.start(boot);
   var lastScanSymbol = boot.default_symbol || "";
 
