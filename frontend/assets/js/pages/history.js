@@ -78,8 +78,9 @@
       sideNode.textContent = parts.length ? parts.join(" · ") : "—";
     }
     if (metaNode) {
-      metaNode.textContent = summary.from.slice(0, 10) + " to "
-        + summary.to.slice(0, 10)
+      var fromStr = summary.from ? String(summary.from).slice(0, 10) : "—";
+      var toStr = summary.to ? String(summary.to).slice(0, 10) : "—";
+      metaNode.textContent = fromStr + " to " + toStr
         + (currency ? " · " + currency : "");
     }
   }

@@ -437,15 +437,6 @@
   }
 
   /**
-   * Create a promise that resolves after ms
-   * @param {number} ms
-   * @returns {Promise}
-   */
-  function sleep(ms) {
-    return new Promise(function (resolve) { setTimeout(resolve, ms); });
-  }
-
-  /**
    * Format timestamp in broker time
    * @param {number} epochSeconds - Unix timestamp
    * @param {number} clockOffset - Broker clock offset in seconds

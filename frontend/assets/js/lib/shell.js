@@ -64,8 +64,21 @@
     global.setInterval(tick, 1000);
   }
 
+  function markCurrentSection() {
+    var path = (global.location && global.location.pathname) || "/";
+    var links = (global.document || document).querySelectorAll("nav a");
+    for (var i = 0; i < links.length; i++) {
+      var href = links[i].getAttribute("href") || "";
+      var active = href === path ||
+        (href !== "/" && href !== "" && path.indexOf(href) === 0);
+      if (active) links[i].setAttribute("aria-current", "page");
+      else links[i].removeAttribute("aria-current");
+    }
+  }
+
   function start(boot) {
     boot = boot || (global.dom && global.dom.bootstrap ? global.dom.bootstrap() : {});
+    markCurrentSection();
     paintShell(boot);
     startClock(boot);
   }

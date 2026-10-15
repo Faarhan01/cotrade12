@@ -122,6 +122,8 @@ class LiveTrader:
         if self.strategy is None:
             raise ValueError("no strategy attached")
         bars = bars or self.bars()
+        if len(bars) < 3:
+            return 0
         ctx = Context(bars=bars)
         return self.strategy.signal(ctx, len(bars) - 2)   # -2: last bar may be forming
 

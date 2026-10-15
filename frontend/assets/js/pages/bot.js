@@ -45,7 +45,7 @@
         return;
       }
 
-      let html = '<table class="table mono" style="font-size: 13px;">' +
+      let html = '<table class="grid mono" style="font-size: 13px;">' +
         '<thead><tr>' +
         '<th>Strategy</th>' +
         '<th>Symbol</th>' +
@@ -63,7 +63,7 @@
         const tStat = r.t_statistic != null ? Number(r.t_statistic).toFixed(2) : "-";
         const verdict = r.verdict || "untested";
         const isGood = verdict === "strong" || verdict === "promising";
-        const badgeClass = isGood ? "badge-good" : (verdict === "noise" ? "badge-bad" : "badge-neutral");
+        const badgeClass = isGood ? "tag" : (verdict === "noise" ? "tag warn" : "tag muted");
 
         html += '<tr>' +
           '<td><strong>' + fmt.escapeHtml(r.strategy_name) + '</strong></td>' +
@@ -97,7 +97,7 @@
         return;
       }
 
-      let html = '<table class="table" style="font-size: 13px;">' +
+      let html = '<table class="grid" style="font-size: 13px;">' +
         '<thead><tr>' +
         '<th>Name</th>' +
         '<th>Symbol</th>' +

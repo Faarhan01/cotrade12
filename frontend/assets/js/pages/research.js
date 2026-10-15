@@ -83,15 +83,15 @@
         + result.busiest_pattern_per_100_bars + "% of bars</dd>"
         + "<dt>real signal</dt><dd>"
         + (result.significant_after_correction.length
-            ? result.significant_after_correction.join(", ") : "none") + "</dd>"
+            ? result.significant_after_correction.map(fmt.escapeHtml).join(", ") : "none") + "</dd>"
         + "<dt>too small to trade</dt><dd>"
-        + (result.cost_marginal.length ? result.cost_marginal.join(", ") : "none")
+        + (result.cost_marginal.length ? result.cost_marginal.map(fmt.escapeHtml).join(", ") : "none")
         + "</dd>"
         + "<dt>tradeable</dt><dd>"
         + (result.tradable_as_signalled.length
-            ? result.tradable_as_signalled.join(", ") : "none") + " as signalled / "
+            ? result.tradable_as_signalled.map(fmt.escapeHtml).join(", ") : "none") + " as signalled / "
         + (result.tradable_inverted.length
-            ? result.tradable_inverted.join(", ") : "none") + " inverted</dd>"
+            ? result.tradable_inverted.map(fmt.escapeHtml).join(", ") : "none") + " inverted</dd>"
         + "</dl></div>";
     }
 

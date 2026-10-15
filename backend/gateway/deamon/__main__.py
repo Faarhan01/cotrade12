@@ -38,7 +38,7 @@ from cony.mt5_engine import (
     SymbolNotFoundError,
 )
 from core.server import Router, RouteHandlers
-from core.server.errors import BadRequest, HTTPError
+from core.server.errors import BadRequest, HTTPError, PayloadTooLarge
 from core.server.responses import RawResponse
 from core.server.streaming import (
     EventStream,
@@ -136,6 +136,7 @@ class GatewayHandler(BaseHTTPRequestHandler):
     # blocked in readline() indefinitely; enough of those and the accept loop
     # starves while the process sits at zero CPU and still looks healthy.
     timeout = 30
+    MAX_REQUEST_BODY_BYTES = 8 * 1024 * 1024
 
     def log_message(self, fmt, *args):
         logger.debug("%s %s", self.client_address[0], fmt % args)
@@ -147,7 +148,10 @@ class GatewayHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", content_type)
         if length is not None:
             self.send_header("Content-Length", str(length))
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header(
+            "Access-Control-Allow-Origin",
+            os.getenv("CONY_CORS_ORIGIN", "*"),
+        )
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Expose-Headers", "Content-Type")
@@ -198,10 +202,20 @@ class GatewayHandler(BaseHTTPRequestHandler):
 
     def read_body(self):
         """Read the JSON body. Raises BadRequest when it is unparseable."""
-        length = self.headers.get("Content-Length")
-        if not length:
+        raw_length = self.headers.get("Content-Length")
+        if not raw_length:
             return None
-        raw = self.rfile.read(int(length))
+        try:
+            length = int(raw_length)
+        except (TypeError, ValueError) as exc:
+            raise BadRequest(f"Invalid Content-Length: {exc}.")
+        if length < 0:
+            raise BadRequest("Content-Length must not be negative.")
+        if length > self.MAX_REQUEST_BODY_BYTES:
+            raise PayloadTooLarge(
+                f"Request body exceeds the {self.MAX_REQUEST_BODY_BYTES} byte limit."
+            )
+        raw = self.rfile.read(length) if length else b""
         if not raw:
             return None
         try:

@@ -46,6 +46,10 @@ class Store:
             self._conn.execute("PRAGMA journal_mode=WAL")
             self._conn.execute("PRAGMA foreign_keys=ON")
             self._conn.execute("PRAGMA busy_timeout=5000")
+            # Apply schema idempotently so fresh/upgrade databases are usable.
+            for statement in SCHEMA:
+                self._conn.execute(statement)
+            self._conn.commit()
 
     def close(self):
         with self._lock:

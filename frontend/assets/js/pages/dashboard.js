@@ -218,8 +218,10 @@
         var cell = document.querySelector(
           'td[data-symbol="' + dom.cssEscape(name) + '"]');
         if (!cell || !cell.parentNode) return;
-        var row = cell.parentNode.children;
-        var bidCell = row[1], askCell = row[2];
+        var row = cell.parentNode;
+        var bidCell = row.querySelector('td[data-field="bid"]');
+        var askCell = row.querySelector('td[data-field="ask"]');
+        var spreadCellLookup = row.querySelector('td[data-field="spread"]');
         var digits = parseInt(bidCell.getAttribute("data-digits"), 10) || 5;
 
         var previous = lastBid[name];
@@ -234,7 +236,7 @@
 
         // Recomputed with the same pip size the server used. Inferring it from
         // the digit count is wrong on anything that is not a plain FX pair.
-        var spreadCell = row[3];
+        var spreadCell = spreadCellLookup;
         var pip = parseFloat(spreadCell.getAttribute("data-pip"));
         spreadCell.textContent = fmt.num(
           pip > 0 ? (t.ask - t.bid) / pip : NaN, 2);

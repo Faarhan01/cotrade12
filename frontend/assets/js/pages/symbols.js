@@ -119,7 +119,7 @@
   // The canvas is sized from its CSS box, so it must be redrawn when that
   // box changes. Debounced because a drag-resize fires continuously.
   var resizeTimer = null;
-  global.addEventListener("resize", function () {
+  window.addEventListener("resize", function () {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(paintChart, 120);
   });

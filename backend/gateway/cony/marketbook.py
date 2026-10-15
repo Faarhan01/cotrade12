@@ -99,11 +99,11 @@ class MarketBook:
 
         with self._lock:
             subscribed_here = symbol in self._subscribed or any(
-                sub.casefold() == symbol.strip().casefold() for sub in self._subscribed)
-        if not subscribed_here:
-            self.subscribe(symbol)
+                sub.casefold() == symbol.strip().casefold()
+                for sub in self._subscribed)
+            if not subscribed_here:
+                self.subscribe(symbol)
 
-        with self._lock:
             canonical = symbol
             if canonical not in self._subscribed:
                 for sub in self._subscribed:
@@ -111,7 +111,7 @@ class MarketBook:
                         canonical = sub
                         break
 
-        entries = mt5.market_book_get(canonical)
+            entries = mt5.market_book_get(canonical)
         if entries is None:
             code = mt5.last_error()
             raise MarketBookError(f"market_book_get('{canonical}') failed: {code}")

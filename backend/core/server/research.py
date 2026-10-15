@@ -130,7 +130,7 @@ def get_research():
         api = importlib.import_module("knowledgebase.api")
         store = None
         try:
-            database = importlib.import_module("database")
+            database = importlib.import_module("core.database")
             store = database.Store()
             store.migrate()
         except Exception as exc:                      # noqa: BLE001

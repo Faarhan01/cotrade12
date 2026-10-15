@@ -214,6 +214,8 @@ def ma_cross(ctx: Context, i: int, fast: int = 20, slow: int = 50,
 def breakout_entry(ctx: Context, i: int, period: int = 20,
                    confirm: bool = False) -> int:
     """Donchian breakout: close beyond the prior `period` bars' range."""
+    if period < 1:
+        return 0
     upper = ctx.series("donchian", i, 0, period)
     lower = ctx.series("donchian", i, 1, period)
     if upper is None or lower is None:

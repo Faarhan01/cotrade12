@@ -45,3 +45,10 @@ class UpstreamUnavailable(HTTPError):
 
     status = 503
     type_name = "UpstreamUnavailable"
+
+
+class PayloadTooLarge(HTTPError):
+    """Request body larger than the configured limit. HTTP 413."""
+
+    status = 413
+    type_name = "PayloadTooLarge"

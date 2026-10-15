@@ -18,7 +18,7 @@ from core.server import validation as v
 from core.server.errors import BadRequest, UpstreamUnavailable, NotFound
 from core.server.routes import Router
 from cony import enums
-from cony.mt5_engine import MT5Engine
+from cony.mt5_engine import MT5Engine, MT5ConnectionError
 
 # Standard logging only. server/ must not import deamon/, or the dependency
 # would point backwards (deamon -> server -> deamon) and the layering that

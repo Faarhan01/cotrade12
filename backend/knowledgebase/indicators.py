@@ -117,11 +117,28 @@ def atr(high: Sequence[float], low: Sequence[float], close: Sequence[float],
         period: int = 14) -> Series:
     """Average True Range, Wilder-smoothed."""
     tr = true_range(high, low, close)
-    values = [v for v in tr if v is not None]
-    if len(values) < period:
-        return [None] * len(tr)
-    smoothed = sma(values, period)
-    return smoothed
+    n = len(tr)
+    out: Series = [None] * n
+    # Seed with SMA of the first `period` true ranges, then Wilder smooth.
+    seed_idx = None
+    total = 0.0
+    count = 0
+    for i in range(n):
+        if tr[i] is None:
+            continue
+        total += tr[i]
+        count += 1
+        if count == period:
+            seed_idx = i
+            break
+    if seed_idx is None:
+        return out
+    out[seed_idx] = total / period
+    for i in range(seed_idx + 1, n):
+        if tr[i] is None or out[i - 1] is None:
+            continue
+        out[i] = (out[i - 1] * (period - 1) + tr[i]) / period
+    return out
 
 
 def bollinger(values: Sequence[float], period: int = 20,

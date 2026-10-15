@@ -33,6 +33,7 @@ class ConnectionManager:
         self._mt5 = None
         self._connected = False
         self._lock = threading.RLock()
+        self._connect_lock = threading.RLock()
         self._reconnect_thread: Optional[threading.Thread] = None
         self._stop_reconnect = threading.Event()
         self._connection_info: dict = {}
@@ -155,9 +156,10 @@ class ConnectionManager:
         failing, which keeps a caller from having to re-issue POST /connect
         after a terminal restart.
         """
-        with self._lock:
-            _connected = self._connected
-        if not _connected:
+        with self._connect_lock:
+            with self._lock:
+                if self._connected:
+                    return
             if self._config.get("auto_reconnect", True):
                 self.connect()
             else:

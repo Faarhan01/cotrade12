@@ -65,4 +65,3 @@ class SqlitePatternHitRepository:
 class SqliteStoreHandle:
     def __init__(self, config: Any = None):
         self.config = config
-PYEOF
